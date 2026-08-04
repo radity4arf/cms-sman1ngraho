@@ -18,6 +18,7 @@
 namespace App\Filament\Resources\Users\Pages;
 
 use App\Filament\Resources\Users\UserResource;
+use App\Services\UserDeletionGuard;
 use Filament\Actions\DeleteAction;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
@@ -26,12 +27,13 @@ class EditUser extends EditRecord
 {
     protected static string $resource = UserResource::class;
 
-    // [THECHNOLOGY-MOD-DSE] : sembunyikan tombol Delete untuk diri sendiri & super-admin — cegah self-lockout
+    // [THECHNOLOGY-MOD-DSE] : guard delete simetris dengan UsersTable — cegah self-delete,
+    // delete super-admin, dan delete pemegang terakhir manage_users (via UserDeletionGuard)
     protected function getHeaderActions(): array
     {
         return [
             DeleteAction::make()
-                ->hidden(fn ($record) => $record->id === auth()->id() || $record->is_super_admin),
+                ->hidden(fn ($record) => UserDeletionGuard::isProtected($record)),
         ];
     }
 

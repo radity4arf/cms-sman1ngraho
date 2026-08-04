@@ -1,10 +1,23 @@
 <?php
 
+/**
+ * UsersTable
+ *
+ * Konfigurasi tabel daftar pengguna — menampilkan kolom Nama, Email,
+ * Akses Fitur (permission label), dan Tanggal Dibuat. Menyertakan
+ * guard bulk-delete untuk mencegah self-lockout (3 skenario proteksi).
+ *
+ * @author   DSE (Delia Tse)
+ * @created  2026-07-28
+ * @updated  2026-08-04
+ */
+
 // [THECHNOLOGY-CRE-DSE] : UsersTable — tabel daftar user dengan kolom permission
 
 namespace App\Filament\Resources\Users\Tables;
 
 use App\Models\User;
+use App\Services\UserDeletionGuard;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -52,46 +65,40 @@ class UsersTable
             ->toolbarActions([
                 BulkActionGroup::make([
                     // [THECHNOLOGY-MOD-DSE] : guard self-lockout via bulk delete —
-                    // cegah hapus diri sendiri, super-admin, atau satu-satunya pemegang manage_users
+                    // cegah hapus diri sendiri, super-admin, atau satu-satunya pemegang manage_users.
+                    // Logic proteksi didelegasikan ke UserDeletionGuard (shared service) agar simetris
+                    // dengan single-delete di EditUser.php.
                     DeleteBulkAction::make()
                         ->before(function (Collection $records, DeleteBulkAction $action): void {
-                            $currentUserId = auth()->id();
                             $issues = [];
 
+                            // Per-record check: self-delete & super-admin (via shared guard)
                             foreach ($records as $record) {
-                                if ($record->id === $currentUserId) {
-                                    $issues[] = "Tidak bisa menghapus akun Anda sendiri.";
-                                }
-                                if ($record->is_super_admin) {
-                                    $issues[] = "Tidak bisa menghapus akun super-admin.";
-                                }
-                            }
-
-                            // Cek: apakah user yang akan dihapus termasuk pemegang manage_users terakhir?
-                            if (empty($issues)) {
-                                $deletingIds = $records->pluck('id')->toArray();
-                                $deletingHasManageUsers = User::whereIn('id', $deletingIds)
-                                    ->whereHas('permissions', fn ($q) => $q->where('name', 'manage_users'))
-                                    ->exists();
-
-                                if ($deletingHasManageUsers) {
-                                    $otherWithAccess = User::whereNotIn('id', $deletingIds)
-                                        ->where(function ($q) {
-                                            $q->where('is_super_admin', true)
-                                              ->orWhereHas('permissions', fn ($sq) => $sq->where('name', 'manage_users'));
-                                        })
-                                        ->count();
-
-                                    if ($otherWithAccess === 0) {
-                                        $issues[] = "Tidak bisa menghapus satu-satunya pengguna dengan akses manage_users. Sistem akan terkunci total.";
+                                if (UserDeletionGuard::isSelfOrSuperAdmin($record)) {
+                                    if ($record->id === auth()->id()) {
+                                        $issues[] = "Tidak bisa menghapus akun Anda sendiri.";
+                                    }
+                                    if ($record->is_super_admin) {
+                                        $issues[] = "Tidak bisa menghapus akun super-admin.";
                                     }
                                 }
                             }
 
+                            // Batch-level check: last manage_users holder (via shared guard)
+                            if (empty($issues)) {
+                                if (UserDeletionGuard::wouldRemoveLastManageUsersHolder($records)) {
+                                    $issues[] = "Tidak bisa menghapus satu-satunya pengguna dengan akses manage_users. Sistem akan terkunci total.";
+                                }
+                            }
+
                             if (!empty($issues)) {
+                                // [THECHNOLOGY-MOD-DSE] : array_unique mencegah duplikasi pesan
+                                // identik dari beberapa record dalam batch yang sama
+                                $uniqueIssues = array_unique($issues);
+
                                 Notification::make()
                                     ->title('Aksi Ditolak')
-                                    ->body(implode(' ', $issues))
+                                    ->body(implode(' ', $uniqueIssues))
                                     ->danger()
                                     ->send();
 
