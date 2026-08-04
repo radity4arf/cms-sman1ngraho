@@ -26,14 +26,14 @@ class User extends Authenticatable implements FilamentUser
 
     /**
      * Tentukan apakah user bisa mengakses Filament panel.
-     * Semua user yang bisa login ke admin panel harus punya akses.
-     * Permission granular dicek via Gate/Policies di level fitur, bukan di sini.
+     * Hanya user yang punya minimal 1 permission ATAU adalah super-admin yang diizinkan masuk.
+     * Ini mencegah user tanpa permission apapun bisa login ke dashboard kosong tanpa menu.
      */
     public function canAccessPanel(Panel $panel): bool
     {
-        // [THECHNOLOGY-CRE-DSE] : semua user yang sudah login bisa akses admin panel
-        // Permission spesifik per fitur dicek via Gate::allows() di resource/widget masing-masing
-        return true;
+        // [THECHNOLOGY-CRE-DSE] : izinkan masuk hanya jika user punya minimal 1 permission
+        // atau memiliki flag is_super_admin — ini menjaga granularitas akses panel itu sendiri
+        return $this->is_super_admin || $this->getAllPermissions()->isNotEmpty();
     }
 
     /**
@@ -46,6 +46,7 @@ class User extends Authenticatable implements FilamentUser
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_super_admin' => 'boolean',
         ];
     }
 }

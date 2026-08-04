@@ -22,14 +22,13 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // [THECHNOLOGY-CRE-DSE] : Gate::before — jika user adalah super-admin (punya SEMUA permission),
+        // [THECHNOLOGY-CRE-DSE] : Gate::before — jika user memiliki flag is_super_admin,
         // otomatis diizinkan mengakses semua fitur tanpa perlu assign permission satu per satu.
+        // Flag eksplisit ini tidak bergantung pada jumlah/daftar permission yang bisa berubah di Fase 3+.
         // User biasa tetap melalui pengecekan permission normal (Gate/Policies).
         Gate::before(function ($user) {
-            // Super-admin diidentifikasi dengan memiliki SEMUA permission yang terdaftar
-            $allPermissions = \Spatie\Permission\Models\Permission::pluck('name')->toArray();
-
-            if (!empty($allPermissions) && $user->hasAllPermissions($allPermissions)) {
+            // [THECHNOLOGY-CRE-DSE] : cek flag boolean eksplisit, bukan daftar permission dinamis
+            if ($user->is_super_admin) {
                 return true;
             }
 
