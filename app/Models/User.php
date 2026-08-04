@@ -1,5 +1,17 @@
 <?php
 
+/**
+ * User Model
+ *
+ * Model autentikasi utama — mengimplementasikan FilamentUser untuk akses panel
+ * dan Spatie HasRoles untuk permission granular per user (bukan role tetap).
+ * Super-admin dikenali lewat flag boolean is_super_admin (lihat Gate::before).
+ *
+ * @author   DSE (Delia Tse)
+ * @created  2026-07-28
+ * @updated  2026-08-04
+ */
+
 // [THECHNOLOGY-CRE-DSE] : User model — implementasi FilamentUser + Spatie permission granular per fitur (bukan role tetap)
 
 namespace App\Models;

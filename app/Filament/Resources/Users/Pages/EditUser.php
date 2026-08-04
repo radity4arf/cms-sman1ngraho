@@ -1,5 +1,17 @@
 <?php
 
+/**
+ * EditUser Page
+ *
+ * Halaman edit pengguna — menangani sinkronisasi permission setelah update
+ * dan pengaman self-lockout (tidak bisa mencabut manage_users dari diri sendiri,
+ * tidak bisa menghapus super-admin atau diri sendiri via DeleteAction).
+ *
+ * @author   DSE (Delia Tse)
+ * @created  2026-07-28
+ * @updated  2026-08-04
+ */
+
 // [THECHNOLOGY-CRE-DSE] : EditUser page — handle sync permissions setelah user diupdate + populate data awal
 // + pengaman self-lockout: admin tidak bisa mencabut manage_users dari akun dirinya sendiri
 
@@ -14,10 +26,12 @@ class EditUser extends EditRecord
 {
     protected static string $resource = UserResource::class;
 
+    // [THECHNOLOGY-MOD-DSE] : sembunyikan tombol Delete untuk diri sendiri & super-admin — cegah self-lockout
     protected function getHeaderActions(): array
     {
         return [
-            DeleteAction::make(),
+            DeleteAction::make()
+                ->hidden(fn ($record) => $record->id === auth()->id() || $record->is_super_admin),
         ];
     }
 

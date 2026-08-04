@@ -1,5 +1,17 @@
 <?php
 
+/**
+ * AppServiceProvider
+ *
+ * Service provider utama — mendaftarkan Gate::before untuk super-admin
+ * (flag is_super_admin) sehingga user super-admin otomatis lolos semua
+ * pengecekan permission tanpa perlu assign satu per satu.
+ *
+ * @author   DSE (Delia Tse)
+ * @created  2026-07-28
+ * @updated  2026-08-04
+ */
+
 // [THECHNOLOGY-CRE-DSE] : AppServiceProvider — Gate::before untuk super-admin + integrasi Spatie permission
 
 namespace App\Providers;

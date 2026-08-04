@@ -1,5 +1,17 @@
 <?php
 
+/**
+ * UserResource
+ *
+ * Filament resource untuk manajemen pengguna (CRUD) dengan permission granular.
+ * Mengintegrasikan form (UserForm), tabel (UsersTable), dan kontrol akses
+ * berbasis Gate (permission manage_users / super-admin).
+ *
+ * @author   DSE (Delia Tse)
+ * @created  2026-07-28
+ * @updated  2026-08-04
+ */
+
 // [THECHNOLOGY-CRE-DSE] : UserResource — CRUD user + assignment permission granular per fitur (bukan role)
 
 namespace App\Filament\Resources\Users;
