@@ -1,0 +1,96 @@
+<?php
+
+/**
+ * HeroSlideResource — Filament CRUD untuk Hero Slider (RT-15)
+ *
+ * is_default=true di-guard dari delete/draft/nonaktif via policy.
+ *
+ * @author   DSE (Delia Tse)
+ * @created  2026-08-08
+ */
+
+// [THECHNOLOGY-CRE] : HeroSlideResource
+
+namespace App\Filament\Resources\HeroSlides;
+
+use App\Filament\Resources\HeroSlides\Pages;
+use App\Models\HeroSlide;
+use Filament\Resources\Resource;
+use Filament\Schemas\Schema;
+use Filament\Forms\Components\Section;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\Toggle;
+use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
+use Filament\Tables\Table;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\ImageColumn;
+use Filament\Tables\Columns\IconColumn;
+use Filament\Tables\Columns\ToggleColumn;
+use Filament\Tables\Filters\TrashedFilter;
+use Filament\Support\Icons\Heroicon;
+use Illuminate\Support\Facades\Gate;
+
+class HeroSlideResource extends Resource
+{
+    protected static ?string $model = HeroSlide::class;
+    protected static ?string $recordTitleAttribute = 'title';
+
+    public static function getNavigationGroup(): string { return 'Konten Beranda'; }
+    public static function getNavigationIcon(): string { return Heroicon::OutlinedPhoto; }
+    public static function getModelLabel(): string { return 'Hero Slide'; }
+    public static function getPluralModelLabel(): string { return 'Hero Slides'; }
+
+    public static function canAccess(): bool
+    {
+        $user = auth()->user();
+        return $user && Gate::allows('view_any_hero_slides');
+    }
+
+    public static function form(Schema $schema): Schema
+    {
+        return $schema->components([
+            Section::make('Informasi Slide')->schema([
+                TextInput::make('title')->label('Judul')->required()->maxLength(255),
+                Textarea::make('caption')->label('Caption')->maxLength(300)->rows(2),
+                TextInput::make('cta_label')->label('Label Tombol')->maxLength(50)->nullable(),
+                TextInput::make('cta_url')->label('URL Tombol')->maxLength(500)->nullable()->url(),
+                Toggle::make('is_default')->label('Slide Default')
+                    ->helperText('Slide fallback — tidak bisa dihapus/dinonaktifkan jika true. Hanya boleh 1.'),
+                TextInput::make('sort_order')->label('Urutan')->numeric()->default(0),
+            ])->columns(2),
+            Section::make('Media')->schema([
+                SpatieMediaLibraryFileUpload::make('image')->label('Gambar')->collection('image')
+                    ->image()->imageEditor()->acceptedFileTypes(['image/jpeg','image/png','image/webp'])->maxSize(10240),
+            ]),
+            Section::make('Status')->schema([
+                Select::make('status')->label('Status')->options(['draft' => 'Draft', 'published' => 'Publish'])->default('draft')->required(),
+                Toggle::make('is_active')->label('Aktif')->default(true),
+                DateTimePicker::make('published_at')->label('Tanggal Terbit')->nullable(),
+            ])->columns(3),
+        ]);
+    }
+
+    public static function table(Table $table): Table
+    {
+        return $table->columns([
+            ImageColumn::make('image')->label('Gambar')->getStateUsing(fn ($r) => $r->getFirstMediaUrl('image', 'thumb')),
+            TextColumn::make('title')->label('Judul')->searchable()->sortable(),
+            IconColumn::make('is_default')->label('Default')->boolean()->sortable(),
+            TextColumn::make('status')->label('Status')->badge()->color(fn ($s) => $s === 'published' ? 'success' : 'warning')->sortable(),
+            ToggleColumn::make('is_active')->label('Aktif')->sortable(),
+            TextColumn::make('sort_order')->label('Urutan')->sortable(),
+        ])->filters([TrashedFilter::make()])->recordActions([\Filament\Tables\Actions\EditAction::make()]);
+    }
+
+    public static function getPages(): array
+    {
+        return [
+            'index'  => Pages\ListHeroSlides::route('/'),
+            'create' => Pages\CreateHeroSlide::route('/create'),
+            'edit'   => Pages\EditHeroSlide::route('/{record}/edit'),
+        ];
+    }
+}

@@ -1,0 +1,1 @@
+<?php namespace App\Filament\Resources\AlumniTestimonials\Pages; use App\Filament\Resources\AlumniTestimonials\AlumniTestimonialResource; use Filament\Resources\Pages\CreateRecord; class CreateAlumniTestimonial extends CreateRecord { protected static string $resource = AlumniTestimonialResource::class; }
