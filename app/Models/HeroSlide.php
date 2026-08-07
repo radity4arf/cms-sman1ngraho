@@ -49,7 +49,7 @@ class HeroSlide extends Model implements HasMedia
             ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/webp']);
     }
 
-    public function registerMediaConversions(?\Spatie\MediaLibrary\Conversions\Media $media = null): void
+    public function registerMediaConversions(?\Spatie\MediaLibrary\MediaCollections\Models\Media $media = null): void
     {
         $this->addMediaConversion('thumb')
             ->width(480)->height(270)
