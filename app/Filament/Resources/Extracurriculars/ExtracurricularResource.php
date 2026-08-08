@@ -92,7 +92,7 @@ class ExtracurricularResource extends Resource
             SelectFilter::make('category')->options([
                 'olahraga' => 'Olahraga', 'seni' => 'Seni', 'akademik' => 'Akademik', 'keagamaan' => 'Keagamaan',
             ]),
-        ])->recordActions([\Filament\Tables\Actions\EditAction::make()]);
+        ])->recordActions([\Filament\Actions\EditAction::make()]);
     }
 
     public static function getPages(): array

@@ -63,7 +63,7 @@ class DownloadCategoryResource extends Resource
             TextColumn::make('downloads_count')->label('File')->counts('downloads')->sortable(),
             ToggleColumn::make('is_active')->label('Aktif')->sortable(),
             TextColumn::make('sort_order')->label('Urutan')->sortable(),
-        ])->filters([TrashedFilter::make()])->recordActions([\Filament\Tables\Actions\EditAction::make()]);
+        ])->filters([TrashedFilter::make()])->recordActions([\Filament\Actions\EditAction::make()]);
     }
 
     public static function getPages(): array

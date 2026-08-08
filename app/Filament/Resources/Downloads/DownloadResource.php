@@ -88,7 +88,7 @@ class DownloadResource extends Resource
         ])->filters([
             TrashedFilter::make(),
             SelectFilter::make('download_category_id')->label('Kategori')->relationship('category', 'name'),
-        ])->recordActions([\Filament\Tables\Actions\EditAction::make()]);
+        ])->recordActions([\Filament\Actions\EditAction::make()]);
     }
 
     public static function getPages(): array

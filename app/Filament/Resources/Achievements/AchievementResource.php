@@ -77,7 +77,7 @@ class AchievementResource extends Resource
             TextColumn::make('year')->label('Tahun')->sortable(),
             TextColumn::make('status')->label('Status')->badge()->color(fn ($s) => $s === 'published' ? 'success' : 'warning')->sortable(),
             ToggleColumn::make('is_active')->label('Aktif')->sortable(),
-        ])->filters([TrashedFilter::make()])->recordActions([\Filament\Tables\Actions\EditAction::make()]);
+        ])->filters([TrashedFilter::make()])->recordActions([\Filament\Actions\EditAction::make()]);
     }
 
     public static function getPages(): array

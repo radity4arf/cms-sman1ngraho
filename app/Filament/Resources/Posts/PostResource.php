@@ -85,7 +85,7 @@ class PostResource extends Resource
         ])->filters([
             TrashedFilter::make(),
         ])->recordActions([
-            \Filament\Tables\Actions\EditAction::make(),
+            \Filament\Actions\EditAction::make(),
         ]);
     }
 

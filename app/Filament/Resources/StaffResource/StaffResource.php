@@ -87,7 +87,7 @@ class StaffResource extends Resource
             SelectFilter::make('category')->options([
                 'guru' => 'Guru', 'tenaga_kependidikan' => 'Tenaga Kependidikan',
             ]),
-        ])->recordActions([\Filament\Tables\Actions\EditAction::make()]);
+        ])->recordActions([\Filament\Actions\EditAction::make()]);
     }
 
     public static function getPages(): array
