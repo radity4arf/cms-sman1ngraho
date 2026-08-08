@@ -33,7 +33,7 @@ class DownloadCategoryResource extends Resource
     protected static ?string $recordTitleAttribute = 'name';
 
     public static function getNavigationGroup(): string { return 'Unduhan'; }
-    public static function getNavigationIcon(): string { return Heroicon::OutlinedFolder; }
+    public static function getNavigationIcon(): \BackedEnum|string|null { return Heroicon::OutlinedFolder; }
     public static function getModelLabel(): string { return 'Kategori Unduhan'; }
     public static function getPluralModelLabel(): string { return 'Kategori Unduhan'; }
 

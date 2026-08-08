@@ -36,7 +36,7 @@ class AchievementResource extends Resource
     protected static ?string $recordTitleAttribute = 'title';
 
     public static function getNavigationGroup(): string { return 'Konten Beranda'; }
-    public static function getNavigationIcon(): string { return Heroicon::OutlinedTrophy; }
+    public static function getNavigationIcon(): \BackedEnum|string|null { return Heroicon::OutlinedTrophy; }
     public static function getModelLabel(): string { return 'Prestasi'; }
     public static function getPluralModelLabel(): string { return 'Prestasi'; }
 

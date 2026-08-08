@@ -39,7 +39,7 @@ class DownloadResource extends Resource
     protected static ?string $recordTitleAttribute = 'title';
 
     public static function getNavigationGroup(): string { return 'Unduhan'; }
-    public static function getNavigationIcon(): string { return Heroicon::OutlinedArrowDownTray; }
+    public static function getNavigationIcon(): \BackedEnum|string|null { return Heroicon::OutlinedArrowDownTray; }
     public static function getModelLabel(): string { return 'Unduhan'; }
     public static function getPluralModelLabel(): string { return 'Unduhan'; }
 

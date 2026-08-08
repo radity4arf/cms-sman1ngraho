@@ -36,7 +36,7 @@ class AlbumResource extends Resource
     protected static ?string $recordTitleAttribute = 'name';
 
     public static function getNavigationGroup(): string { return 'Galeri'; }
-    public static function getNavigationIcon(): string { return Heroicon::OutlinedCamera; }
+    public static function getNavigationIcon(): \BackedEnum|string|null { return Heroicon::OutlinedCamera; }
     public static function getModelLabel(): string { return 'Album'; }
     public static function getPluralModelLabel(): string { return 'Album'; }
 

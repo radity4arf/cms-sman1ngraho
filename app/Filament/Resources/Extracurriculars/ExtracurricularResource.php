@@ -38,7 +38,7 @@ class ExtracurricularResource extends Resource
     protected static ?string $recordTitleAttribute = 'name';
 
     public static function getNavigationGroup(): string { return 'Profil'; }
-    public static function getNavigationIcon(): string { return Heroicon::OutlinedStar; }
+    public static function getNavigationIcon(): \BackedEnum|string|null { return Heroicon::OutlinedStar; }
     public static function getModelLabel(): string { return 'Ekstrakurikuler'; }
     public static function getPluralModelLabel(): string { return 'Ekstrakurikuler'; }
 

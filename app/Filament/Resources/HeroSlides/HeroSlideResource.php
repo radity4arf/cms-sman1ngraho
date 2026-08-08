@@ -39,7 +39,7 @@ class HeroSlideResource extends Resource
     protected static ?string $recordTitleAttribute = 'title';
 
     public static function getNavigationGroup(): string { return 'Konten Beranda'; }
-    public static function getNavigationIcon(): string { return Heroicon::OutlinedPhoto; }
+    public static function getNavigationIcon(): \BackedEnum|string|null { return Heroicon::OutlinedPhoto; }
     public static function getModelLabel(): string { return 'Hero Slide'; }
     public static function getPluralModelLabel(): string { return 'Hero Slides'; }
 

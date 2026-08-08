@@ -37,7 +37,7 @@ class PostResource extends Resource
     protected static ?string $recordTitleAttribute = 'title';
 
     public static function getNavigationGroup(): string { return 'Konten Beranda'; }
-    public static function getNavigationIcon(): string { return Heroicon::OutlinedNewspaper; }
+    public static function getNavigationIcon(): \BackedEnum|string|null { return Heroicon::OutlinedNewspaper; }
     public static function getModelLabel(): string { return 'Berita'; }
     public static function getPluralModelLabel(): string { return 'Berita'; }
 

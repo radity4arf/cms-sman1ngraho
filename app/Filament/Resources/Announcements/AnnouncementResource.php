@@ -35,7 +35,7 @@ class AnnouncementResource extends Resource
     protected static ?string $recordTitleAttribute = 'title';
 
     public static function getNavigationGroup(): string { return 'Konten Beranda'; }
-    public static function getNavigationIcon(): string { return Heroicon::OutlinedMegaphone; }
+    public static function getNavigationIcon(): \BackedEnum|string|null { return Heroicon::OutlinedMegaphone; }
     public static function getModelLabel(): string { return 'Pengumuman'; }
     public static function getPluralModelLabel(): string { return 'Pengumuman'; }
 

@@ -35,7 +35,7 @@ class AgendaResource extends Resource
     protected static ?string $recordTitleAttribute = 'title';
 
     public static function getNavigationGroup(): string { return 'Konten Beranda'; }
-    public static function getNavigationIcon(): string { return Heroicon::OutlinedCalendarDays; }
+    public static function getNavigationIcon(): \BackedEnum|string|null { return Heroicon::OutlinedCalendarDays; }
     public static function getModelLabel(): string { return 'Agenda'; }
     public static function getPluralModelLabel(): string { return 'Agenda'; }
 

@@ -36,7 +36,7 @@ class AlumniTestimonialResource extends Resource
     protected static ?string $recordTitleAttribute = 'name';
 
     public static function getNavigationGroup(): string { return 'Konten Beranda'; }
-    public static function getNavigationIcon(): string { return Heroicon::OutlinedAcademicCap; }
+    public static function getNavigationIcon(): \BackedEnum|string|null { return Heroicon::OutlinedAcademicCap; }
     public static function getModelLabel(): string { return 'Alumni Menginspirasi'; }
     public static function getPluralModelLabel(): string { return 'Alumni Menginspirasi'; }
 
