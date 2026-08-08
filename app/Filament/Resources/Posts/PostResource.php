@@ -50,30 +50,55 @@ class PostResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            Section::make('Konten')->schema([
+            // [THECHNOLOGY-MOD] : Section "Informasi Utama" — HANYA Judul + Slug (2 kolom sejajar)
+            Section::make('Informasi Utama')->schema([
                 TextInput::make('title')->label('Judul')->required()->maxLength(255)->live(onBlur: true)
                     ->afterStateUpdated(fn ($set, $state) => $set('slug', Post::generateUniqueSlug($state))),
                 TextInput::make('slug')->label('Slug')->required()->unique(ignoreRecord: true)->maxLength(255),
-                Textarea::make('excerpt')->label('Ringkasan')->maxLength(300)->rows(3),
-                // [THECHNOLOGY-MOD] : RichEditor dengan file attachment inline + min-height 500px
+            ])->columns(2),
+
+            // [THECHNOLOGY-MOD] : Section "Konten" BARU — Ringkasan + Isi Berita, full-width melebar horizontal
+            Section::make('Konten')->schema([
+                Textarea::make('excerpt')->label('Ringkasan')->maxLength(300)->rows(3)
+                    ->columnSpanFull(),
+                // [THECHNOLOGY-MOD] : RichEditor dengan file attachment inline + min-height 600px
                 // Gambar/video inline disimpan di disk 'public' (lokal), validasi jpg/png/webp max 10MB.
                 // Featured image (Gambar Utama) TETAP terpisah — berfungsi sebagai thumbnail utama.
                 RichEditor::make('body')
                     ->label('Isi Berita')
                     ->required()
                     ->columnSpanFull()
-                    ->extraInputAttributes(['style' => 'min-height: 500px;'])
+                    ->extraInputAttributes(['style' => 'min-height: 600px;'])
                     ->fileAttachmentsDisk('public')
                     ->fileAttachmentsDirectory('posts/content')
                     ->fileAttachmentsAcceptedFileTypes(['image/jpeg', 'image/png', 'image/webp'])
-                    ->fileAttachmentsMaxSize(10240),
-            ])->columns(2),
+                    ->fileAttachmentsMaxSize(10240)
+                    ->toolbarButtons([
+                        'attachFiles',
+                        'blockquote',
+                        'bold',
+                        'bulletList',
+                        'codeBlock',
+                        'h2',
+                        'h3',
+                        'italic',
+                        'link',
+                        'orderedList',
+                        'redo',
+                        'strike',
+                        'underline',
+                        'undo',
+                    ]),
+            ]),
+
+            // Section "Media" — Gambar Utama (tetap terpisah, TIDAK digabung ke section Konten)
             Section::make('Media')->schema([
                 SpatieMediaLibraryFileUpload::make('featured_image')
                     ->label('Gambar Utama')->collection('featured_image')
                     ->image()->imageEditor()->acceptedFileTypes(['image/jpeg','image/png','image/webp'])
                     ->maxSize(10240),
             ]),
+
             Section::make('Status')->schema([
                 Select::make('status')->label('Status')->options([
                     'draft' => 'Draft', 'published' => 'Publish',

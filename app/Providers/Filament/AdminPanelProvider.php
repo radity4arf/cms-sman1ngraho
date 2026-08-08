@@ -28,6 +28,8 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login()
+            // [THECHNOLOGY-MOD] : Ganti brand name panel admin
+            ->brandName('Panel Admin SMAN 1 Ngraho')
             ->colors([
                 'primary' => Color::Amber,
             ])
