@@ -16,7 +16,7 @@ namespace App\Filament\Resources\Albums;
 use App\Models\Photo;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
-use Filament\Forms\Components\Section;
+use Filament\Schemas\Components\Section;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Toggle;

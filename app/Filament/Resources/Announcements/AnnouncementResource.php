@@ -15,7 +15,7 @@ use App\Filament\Resources\Announcements\Pages;
 use App\Models\Announcement;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
-use Filament\Forms\Components\Section;
+use Filament\Schemas\Components\Section;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\DatePicker;

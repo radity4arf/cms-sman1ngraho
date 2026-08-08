@@ -15,7 +15,7 @@ use App\Filament\Resources\Facilities\Pages;
 use App\Models\Facility;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
-use Filament\Forms\Components\Section;
+use Filament\Schemas\Components\Section;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\Select;

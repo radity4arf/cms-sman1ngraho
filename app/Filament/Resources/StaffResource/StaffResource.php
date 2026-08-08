@@ -16,7 +16,7 @@ use App\Enums\StaffCategory;
 use App\Models\Staff;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
-use Filament\Forms\Components\Section;
+use Filament\Schemas\Components\Section;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\DateTimePicker;
