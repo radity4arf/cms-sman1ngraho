@@ -23,7 +23,7 @@ use Filament\Forms\Components\Toggle;
 use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Filament\Tables\Table;
 use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Columns\ImageColumn;
+use Filament\Tables\Columns\SpatieMediaLibraryImageColumn;
 use Filament\Tables\Columns\ToggleColumn;
 
 class PhotoRelationManager extends RelationManager
@@ -58,7 +58,7 @@ class PhotoRelationManager extends RelationManager
     public function table(Table $table): Table
     {
         return $table->columns([
-            ImageColumn::make('image')->label('Gambar')->getStateUsing(fn ($r) => $r->getFirstMediaUrl('image', 'thumb')),
+            SpatieMediaLibraryImageColumn::make('image')->label('Gambar')->collection('image')->conversion('thumb'),
             TextColumn::make('caption')->label('Caption')->searchable()->sortable(),
             TextColumn::make('status')->label('Status')->badge()->color(fn ($s) => $s === 'published' ? 'success' : 'warning')->sortable(),
             ToggleColumn::make('is_active')->label('Aktif')->sortable(),

@@ -25,7 +25,7 @@ use Filament\Forms\Components\Toggle;
 use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Filament\Tables\Table;
 use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Columns\ImageColumn;
+use Filament\Tables\Columns\SpatieMediaLibraryImageColumn;
 use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Support\Icons\Heroicon;
@@ -76,7 +76,7 @@ class PostResource extends Resource
     public static function table(Table $table): Table
     {
         return $table->columns([
-            ImageColumn::make('featured_image')->label('Gambar')->circular()->getStateUsing(fn ($r) => $r->getFirstMediaUrl('featured_image', 'thumb')),
+            SpatieMediaLibraryImageColumn::make('featured_image')->label('Gambar')->circular()->collection('featured_image')->conversion('thumb'),
             TextColumn::make('title')->label('Judul')->searchable()->sortable(),
             TextColumn::make('status')->label('Status')->badge()->color(fn ($s) => $s === 'published' ? 'success' : 'warning')->sortable(),
             ToggleColumn::make('is_active')->label('Aktif')->sortable(),

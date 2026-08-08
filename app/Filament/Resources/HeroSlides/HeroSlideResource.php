@@ -26,7 +26,7 @@ use Filament\Forms\Components\Toggle;
 use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Filament\Tables\Table;
 use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Columns\ImageColumn;
+use Filament\Tables\Columns\SpatieMediaLibraryImageColumn;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Filters\TrashedFilter;
@@ -76,7 +76,7 @@ class HeroSlideResource extends Resource
     public static function table(Table $table): Table
     {
         return $table->columns([
-            ImageColumn::make('image')->label('Gambar')->getStateUsing(fn ($r) => $r->getFirstMediaUrl('image', 'thumb')),
+            SpatieMediaLibraryImageColumn::make('image')->label('Gambar')->collection('image')->conversion('thumb'),
             TextColumn::make('title')->label('Judul')->searchable()->sortable(),
             IconColumn::make('is_default')->label('Default')->boolean()->sortable(),
             TextColumn::make('status')->label('Status')->badge()->color(fn ($s) => $s === 'published' ? 'success' : 'warning')->sortable(),

@@ -24,7 +24,7 @@ use Filament\Forms\Components\Toggle;
 use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Filament\Tables\Table;
 use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Columns\ImageColumn;
+use Filament\Tables\Columns\SpatieMediaLibraryImageColumn;
 use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Support\Icons\Heroicon;
@@ -71,7 +71,7 @@ class AchievementResource extends Resource
     public static function table(Table $table): Table
     {
         return $table->columns([
-            ImageColumn::make('photo')->label('Foto')->circular()->getStateUsing(fn ($r) => $r->getFirstMediaUrl('photo', 'thumb')),
+            SpatieMediaLibraryImageColumn::make('photo')->label('Foto')->circular()->collection('photo')->conversion('thumb'),
             TextColumn::make('title')->label('Judul')->searchable()->sortable(),
             TextColumn::make('name')->label('Nama')->searchable()->sortable(),
             TextColumn::make('year')->label('Tahun')->sortable(),
