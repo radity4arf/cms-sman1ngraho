@@ -2,7 +2,7 @@
 
 **Tanggal:** 08 Agustus 2026
 **Branch:** `feature/fase3-database-crud`
-**Status:** 2 bug CRITICAL fixed — siap trial RDA
+**Status:** 3 bug CRITICAL fixed — siap trial RDA
 
 ---
 
@@ -50,6 +50,20 @@ Sama seperti Bug #1 — semua Resource yang menggunakan `recordActions([...EditA
 
 ---
 
+## Bug #3: `getFirstMediaUrl()` on null — ImageColumn tidak kompatibel dengan spatie medialibrary
+
+**Severity:** CRITICAL — crash saat load halaman List entitas yang punya kolom gambar (8 resource + PhotoRelationManager)
+
+**Root cause:** `ImageColumn::getStateUsing()` di Filament v5.7 menerima **state value** (nilai kolom), bukan model record. Karena kolom `image`/`photo`/`featured_image` tidak ada sebagai atribut database (gambar disimpan via spatie medialibrary di tabel `media`), state-nya `null`. Closure `fn ($r) => $r->getFirstMediaUrl(...)` menerima `null` → fatal error.
+
+**Fix:** Ganti seluruh pemakaian `ImageColumn::make()->getStateUsing(...)` dengan `SpatieMediaLibraryImageColumn::make()->collection(...)->conversion('thumb')` di 8 file.
+
+**File diperbaiki:** PostResource, AchievementResource, AlumniTestimonialResource, StaffResource, ExtracurricularResource, FacilityResource, HeroSlideResource, PhotoRelationManager (8 file).
+
+**Commit:** `59744c7`
+
+---
+
 ## Verifikasi Pasca-Fix
 
 | Check | Status |
@@ -57,9 +71,13 @@ Sama seperti Bug #1 — semua Resource yang menggunakan `recordActions([...EditA
 | grep `Tables\Actions\` di `app/Filament/Resources/` | 0 hasil — bersih |
 | grep `Forms\Actions\` di `app/Filament/Resources/` | 0 hasil — bersih |
 | `Filament\Actions\EditAction` exists | ✅ |
+| `SpatieMediaLibraryImageColumn` exists | ✅ |
 | `Filament\Forms\Components\SpatieMediaLibraryFileUpload` exists | ✅ |
 | `php artisan optimize:clear` (termasuk `filament` cache) | No error — semua resource ter-discover |
 | `getNavigationIcon()` return type | `\BackedEnum\|string\|null` di semua 12 resource |
+| `ImageColumn::make.*getFirstMediaUrl` pattern | 0 hasil — bersih |
+| `use Filament\Tables\Columns\ImageColumn` (lama) | 0 hasil — bersih |
+| Semua ImageColumn diganti SpatieMediaLibraryImageColumn | ✅ 8 file
 
 **Halaman Pages (List/Create/Edit):** Sudah menggunakan namespace benar dari awal — `Filament\Actions\CreateAction`, `Filament\Actions\DeleteAction`. Tidak ada perubahan diperlukan.
 
