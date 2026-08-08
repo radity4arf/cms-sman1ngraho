@@ -55,7 +55,18 @@ class PostResource extends Resource
                     ->afterStateUpdated(fn ($set, $state) => $set('slug', Post::generateUniqueSlug($state))),
                 TextInput::make('slug')->label('Slug')->required()->unique(ignoreRecord: true)->maxLength(255),
                 Textarea::make('excerpt')->label('Ringkasan')->maxLength(300)->rows(3),
-                RichEditor::make('body')->label('Isi Berita')->required()->columnSpanFull(),
+                // [THECHNOLOGY-MOD] : RichEditor dengan file attachment inline + min-height 500px
+                // Gambar/video inline disimpan di disk 'public' (lokal), validasi jpg/png/webp max 10MB.
+                // Featured image (Gambar Utama) TETAP terpisah — berfungsi sebagai thumbnail utama.
+                RichEditor::make('body')
+                    ->label('Isi Berita')
+                    ->required()
+                    ->columnSpanFull()
+                    ->extraInputAttributes(['style' => 'min-height: 500px;'])
+                    ->fileAttachmentsDisk('public')
+                    ->fileAttachmentsDirectory('posts/content')
+                    ->fileAttachmentsAcceptedFileTypes(['image/jpeg', 'image/png', 'image/webp'])
+                    ->fileAttachmentsMaxSize(10240),
             ])->columns(2),
             Section::make('Media')->schema([
                 SpatieMediaLibraryFileUpload::make('featured_image')
