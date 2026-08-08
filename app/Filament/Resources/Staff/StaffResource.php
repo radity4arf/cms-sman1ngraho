@@ -9,9 +9,9 @@
 
 // [THECHNOLOGY-CRE] : StaffResource
 
-namespace App\Filament\Resources\StaffResource;
+namespace App\Filament\Resources\Staff;
 
-use App\Filament\Resources\StaffResource\Pages;
+use App\Filament\Resources\Staff\Pages;
 use App\Enums\StaffCategory;
 use App\Models\Staff;
 use Filament\Resources\Resource;
