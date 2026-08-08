@@ -58,6 +58,7 @@ class PostResource extends Resource
             ])->columns(2),
 
             // [THECHNOLOGY-MOD] : Section "Konten" BARU — Ringkasan + Isi Berita, full-width melebar horizontal
+            // [THECHNOLOGY-FIX] : ->columnSpanFull() di level Section agar keluar dari grid 2-kolom dan melebar penuh
             Section::make('Konten')->schema([
                 Textarea::make('excerpt')->label('Ringkasan')->maxLength(300)->rows(3)
                     ->columnSpanFull(),
@@ -89,7 +90,7 @@ class PostResource extends Resource
                         'underline',
                         'undo',
                     ]),
-            ]),
+            ])->columnSpanFull(),
 
             // Section "Media" — Gambar Utama (tetap terpisah, TIDAK digabung ke section Konten)
             Section::make('Media')->schema([

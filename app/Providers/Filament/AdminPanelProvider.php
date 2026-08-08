@@ -17,6 +17,7 @@ use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
+use Illuminate\Support\HtmlString;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 class AdminPanelProvider extends PanelProvider
@@ -28,10 +29,14 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login()
-            // [THECHNOLOGY-MOD] : Ganti brand name panel admin + logo kecil
-            ->brandName('Panel Admin SMAN 1 Ngraho')
-            ->brandLogo(asset('images/branding/logo-panel-admin.webp'))
-            ->brandLogoHeight('2rem')
+            // [THECHNOLOGY-MOD] : Ganti brand name panel admin + logo kecil di sebelah teks
+            // [THECHNOLOGY-FIX] : brandLogo() menggantikan teks — gunakan HtmlString di brandName() agar logo + teks tampil bersamaan
+            ->brandName(new HtmlString(
+                '<div style="display: flex; align-items: center; gap: 0.75rem;">' .
+                '<img src="' . asset('images/branding/logo-panel-admin.webp') . '" alt="Logo" style="height: 3rem; width: auto;">' .
+                '<span>Panel Admin SMAN 1 Ngraho</span>' .
+                '</div>'
+            ))
             ->colors([
                 'primary' => Color::Amber,
             ])
