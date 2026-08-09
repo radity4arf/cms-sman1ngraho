@@ -49,13 +49,14 @@ class AchievementResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
+            // [THECHNOLOGY-MOD] : field vertikal penuh — hapus columns(2), semua field columnSpanFull
             Section::make('Informasi Prestasi')->schema([
-                TextInput::make('title')->label('Judul / Kejuaraan')->required()->maxLength(255),
-                TextInput::make('name')->label('Nama Siswa / Tim')->nullable()->maxLength(255),
-                TextInput::make('year')->label('Tahun')->numeric()->minValue(1900)->maxValue(2099)->nullable(),
-                Textarea::make('description')->label('Deskripsi')->nullable()->rows(3),
-                TextInput::make('sort_order')->label('Urutan')->numeric()->default(0),
-            ])->columns(2)->columnSpanFull(),
+                TextInput::make('title')->label('Judul / Kejuaraan')->required()->maxLength(255)->columnSpanFull(),
+                TextInput::make('name')->label('Nama Siswa / Tim')->nullable()->maxLength(255)->columnSpanFull(),
+                TextInput::make('year')->label('Tahun')->numeric()->minValue(1900)->maxValue(2099)->nullable()->columnSpanFull(),
+                Textarea::make('description')->label('Deskripsi')->nullable()->rows(3)->columnSpanFull(),
+                TextInput::make('sort_order')->label('Urutan')->numeric()->default(0)->columnSpanFull(),
+            ])->columnSpanFull(),
             Section::make('Media')->schema([
                 SpatieMediaLibraryFileUpload::make('photo')->label('Foto')->collection('photo')
                     ->image()->imageEditor()->acceptedFileTypes(['image/jpeg','image/png','image/webp'])->maxSize(10240),

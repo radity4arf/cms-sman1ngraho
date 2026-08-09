@@ -48,12 +48,13 @@ class AgendaResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
+            // [THECHNOLOGY-MOD] : field vertikal penuh — hapus columns(2), semua field columnSpanFull
             Section::make('Informasi Agenda')->schema([
-                TextInput::make('title')->label('Judul')->required()->maxLength(255),
-                DatePicker::make('event_date')->label('Tanggal')->required(),
-                TextInput::make('location')->label('Lokasi')->nullable()->maxLength(255),
-                Textarea::make('description')->label('Deskripsi')->nullable()->rows(3),
-            ])->columns(2)->columnSpanFull(),
+                TextInput::make('title')->label('Judul')->required()->maxLength(255)->columnSpanFull(),
+                DatePicker::make('event_date')->label('Tanggal')->required()->columnSpanFull(),
+                TextInput::make('location')->label('Lokasi')->nullable()->maxLength(255)->columnSpanFull(),
+                Textarea::make('description')->label('Deskripsi')->nullable()->rows(3)->columnSpanFull(),
+            ])->columnSpanFull(),
             Section::make('Status')->schema([
                 Select::make('status')->label('Status')->options(['draft' => 'Draft', 'published' => 'Publish'])->default('draft')->required(),
                 Toggle::make('is_active')->label('Aktif')->default(true),
