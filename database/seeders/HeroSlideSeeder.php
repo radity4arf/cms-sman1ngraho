@@ -21,18 +21,16 @@ class HeroSlideSeeder extends Seeder
 {
     public function run(): void
     {
-        // Hanya buat jika belum ada slide default sama sekali
-        if (HeroSlide::where('is_default', true)->exists()) {
-            return;
-        }
-
-        HeroSlide::create([
-            'title'      => 'SMAN 1 Ngraho',
-            'caption'    => 'Selamat datang di portal resmi SMAN 1 Ngraho. Unggul dalam prestasi, berakhlak mulia, dan berwawasan global.',
-            'is_default' => true,
-            'sort_order' => 0,
-            'status'     => 'published',
-            'is_active'  => true,
-        ]);
+        // [THECHNOLOGY-FIX] : firstOrCreate agar idempoten — tidak duplikat jika sudah ada
+        HeroSlide::firstOrCreate(
+            ['is_default' => true],
+            [
+                'title'      => 'SMAN 1 Ngraho',
+                'caption'    => 'Selamat datang di portal resmi SMAN 1 Ngraho. Unggul dalam prestasi, berakhlak mulia, dan berwawasan global.',
+                'sort_order' => 0,
+                'status'     => 'published',
+                'is_active'  => true,
+            ]
+        );
     }
 }

@@ -14,6 +14,7 @@
 
 namespace App\Models;
 
+use App\Enums\ContentStatus;
 use App\Traits\HasAudit;
 use App\Traits\HasOrdering;
 use App\Traits\HasPublishWorkflow;
@@ -58,5 +59,37 @@ class HeroSlide extends Model implements HasMedia
         $this->addMediaConversion('medium')
             ->width(1920)->height(1080)
             ->performOnCollections('image');
+    }
+
+    // [THECHNOLOGY-FIX] : Model-level guard — record is_default=true tidak bisa delete/draft/nonaktif
+    // Guard ini berlaku di SEMUA level (UI, Tinker, API, job) — bukan cuma UI hiding.
+    protected static function booted(): void
+    {
+        // Cegah soft-delete record default
+        static::deleting(function (self $slide) {
+            if ($slide->is_default) {
+                throw new \RuntimeException('Slide default tidak dapat dihapus.');
+            }
+        });
+
+        // Cegah force-delete record default
+        static::forceDeleting(function (self $slide) {
+            if ($slide->is_default) {
+                throw new \RuntimeException('Slide default tidak dapat dihapus permanen.');
+            }
+        });
+
+        // Cegah update status ke draft atau nonaktifkan record default (Edge Case #4)
+        static::updating(function (self $slide) {
+            if (! $slide->is_default) {
+                return;
+            }
+            if ($slide->isDirty('status') && $slide->status === ContentStatus::Draft) {
+                throw new \RuntimeException('Slide default tidak dapat diubah menjadi draft.');
+            }
+            if ($slide->isDirty('is_active') && $slide->is_active === false) {
+                throw new \RuntimeException('Slide default tidak dapat dinonaktifkan.');
+            }
+        });
     }
 }
