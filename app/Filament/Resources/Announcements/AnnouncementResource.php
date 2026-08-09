@@ -52,7 +52,7 @@ class AnnouncementResource extends Resource
                 TextInput::make('title')->label('Judul')->required()->maxLength(255),
                 RichEditor::make('body')->label('Isi')->nullable()->columnSpanFull(),
                 DatePicker::make('expired_at')->label('Kadaluarsa')->nullable()->helperText('Kosongkan jika tidak ada batas waktu'),
-            ]),
+            ])->columnSpanFull(),
             Section::make('Status')->schema([
                 Select::make('status')->label('Status')->options(['draft' => 'Draft', 'published' => 'Publish'])->default('draft')->required(),
                 Toggle::make('is_active')->label('Aktif')->default(true),

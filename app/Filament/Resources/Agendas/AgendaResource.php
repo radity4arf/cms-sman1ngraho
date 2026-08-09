@@ -53,7 +53,7 @@ class AgendaResource extends Resource
                 DatePicker::make('event_date')->label('Tanggal')->required(),
                 TextInput::make('location')->label('Lokasi')->nullable()->maxLength(255),
                 Textarea::make('description')->label('Deskripsi')->nullable()->rows(3),
-            ])->columns(2),
+            ])->columns(2)->columnSpanFull(),
             Section::make('Status')->schema([
                 Select::make('status')->label('Status')->options(['draft' => 'Draft', 'published' => 'Publish'])->default('draft')->required(),
                 Toggle::make('is_active')->label('Aktif')->default(true),
