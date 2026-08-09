@@ -31,10 +31,14 @@ class AdminPanelProvider extends PanelProvider
             ->login()
             // [THECHNOLOGY-MOD] : Ganti brand name panel admin + logo kecil di sebelah teks
             // [THECHNOLOGY-FIX] : brandLogo() menggantikan teks — gunakan HtmlString di brandName() agar logo + teks tampil bersamaan
+            // [THECHNOLOGY-MOD] : Split brand text jadi 2 baris — "PANEL ADMIN" / "SMAN 1 NGRAHO"
             ->brandName(new HtmlString(
                 '<div style="display: flex; align-items: center; gap: 0.75rem;">' .
                 '<img src="' . asset('images/branding/logo-panel-admin.webp') . '" alt="Logo" style="height: 3rem; width: auto;">' .
-                '<span>Panel Admin SMAN 1 Ngraho</span>' .
+                '<div style="display: flex; flex-direction: column; line-height: 1.3;">' .
+                '<span style="font-size: 0.75rem; font-weight: 400; letter-spacing: 0.05em;">PANEL ADMIN</span>' .
+                '<span style="font-size: 0.95rem; font-weight: 600;">SMAN 1 NGRAHO</span>' .
+                '</div>' .
                 '</div>'
             ))
             ->colors([
