@@ -30,6 +30,7 @@ use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Facades\Gate;
+use App\Filament\Plugins\YoutubePlugin;
 
 class PostResource extends Resource
 {
@@ -76,6 +77,8 @@ class PostResource extends Resource
                     ->fileAttachmentsDirectory('posts/content')
                     ->fileAttachmentsAcceptedFileTypes(['image/jpeg', 'image/png', 'image/webp'])
                     ->fileAttachmentsMaxSize(10240)
+                    // [THECHNOLOGY-CRE] : YouTube plugin — embed video dengan toolbar button + modal
+                    ->plugins([YoutubePlugin::make()])
                     ->toolbarButtons([
                         'attachFiles',
                         'blockquote',
@@ -91,6 +94,7 @@ class PostResource extends Resource
                         'strike',
                         'underline',
                         'undo',
+                        'youtube',
                     ]),
             ])->columnSpanFull(),
 
