@@ -48,10 +48,10 @@ class AgendaResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            // [THECHNOLOGY-MOD] : field vertikal penuh — hapus columns(2), semua field columnSpanFull
+            // [THECHNOLOGY-MOD] : field vertikal — Tanggal narrow (date picker), sisanya full-width
             Section::make('Informasi Agenda')->schema([
                 TextInput::make('title')->label('Judul')->required()->maxLength(255)->columnSpanFull(),
-                DatePicker::make('event_date')->label('Tanggal')->required()->columnSpanFull(),
+                DatePicker::make('event_date')->label('Tanggal')->required()->columnSpan(4),
                 TextInput::make('location')->label('Lokasi')->nullable()->maxLength(255)->columnSpanFull(),
                 Textarea::make('description')->label('Deskripsi')->nullable()->rows(3)->columnSpanFull(),
             ])->columnSpanFull(),

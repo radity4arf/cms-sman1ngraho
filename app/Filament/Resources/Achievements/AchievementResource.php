@@ -15,6 +15,7 @@ use App\Filament\Resources\Achievements\Pages;
 use App\Models\Achievement;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
+use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
@@ -49,13 +50,16 @@ class AchievementResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            // [THECHNOLOGY-MOD] : field vertikal penuh — hapus columns(2), semua field columnSpanFull
+            // [THECHNOLOGY-MOD] : field vertikal penuh — kecuali Tahun+Urutan sejajar narrow
             Section::make('Informasi Prestasi')->schema([
                 TextInput::make('title')->label('Judul / Kejuaraan')->required()->maxLength(255)->columnSpanFull(),
                 TextInput::make('name')->label('Nama Siswa / Tim')->nullable()->maxLength(255)->columnSpanFull(),
-                TextInput::make('year')->label('Tahun')->numeric()->minValue(1900)->maxValue(2099)->nullable()->columnSpanFull(),
+                // [THECHNOLOGY-MOD] : Tahun & Urutan — field pendek, sejajar 1 baris
+                Grid::make(12)->schema([
+                    TextInput::make('year')->label('Tahun')->numeric()->minValue(1900)->maxValue(2099)->nullable()->columnSpan(2),
+                    TextInput::make('sort_order')->label('Urutan')->numeric()->default(0)->columnSpan(2),
+                ]),
                 Textarea::make('description')->label('Deskripsi')->nullable()->rows(3)->columnSpanFull(),
-                TextInput::make('sort_order')->label('Urutan')->numeric()->default(0)->columnSpanFull(),
             ])->columnSpanFull(),
             Section::make('Media')->schema([
                 SpatieMediaLibraryFileUpload::make('photo')->label('Foto')->collection('photo')
