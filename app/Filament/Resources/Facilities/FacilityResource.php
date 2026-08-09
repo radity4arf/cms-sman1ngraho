@@ -53,7 +53,7 @@ class FacilityResource extends Resource
                 TextInput::make('name')->label('Nama')->required()->maxLength(255),
                 Textarea::make('description')->label('Deskripsi')->nullable()->maxLength(500)->rows(3),
                 TextInput::make('sort_order')->label('Urutan')->numeric()->default(0),
-            ])->columns(2),
+            ])->columns(2)->columnSpanFull(),
             Section::make('Media')->schema([
                 SpatieMediaLibraryFileUpload::make('photo')->label('Foto')->collection('photo')
                     ->image()->imageEditor()->acceptedFileTypes(['image/jpeg','image/png','image/webp'])->maxSize(10240),

@@ -59,7 +59,7 @@ class StaffResource extends Resource
                 TextInput::make('position')->label('Jabatan')->nullable()->maxLength(255),
                 TextInput::make('subject')->label('Mata Pelajaran')->nullable()->maxLength(255),
                 TextInput::make('sort_order')->label('Urutan')->numeric()->default(0),
-            ])->columns(2),
+            ])->columns(2)->columnSpanFull(),
             Section::make('Media')->schema([
                 SpatieMediaLibraryFileUpload::make('photo')->label('Foto')->collection('photo')
                     ->image()->imageEditor()->acceptedFileTypes(['image/jpeg','image/png','image/webp'])->maxSize(10240),

@@ -64,7 +64,7 @@ class ExtracurricularResource extends Resource
                 TextInput::make('schedule')->label('Jadwal')->nullable()->maxLength(100),
                 Textarea::make('description')->label('Deskripsi')->nullable()->rows(3),
                 TextInput::make('sort_order')->label('Urutan')->numeric()->default(0),
-            ])->columns(2),
+            ])->columns(2)->columnSpanFull(),
             Section::make('Media')->schema([
                 SpatieMediaLibraryFileUpload::make('photo')->label('Foto')->collection('photo')
                     ->image()->imageEditor()->acceptedFileTypes(['image/jpeg','image/png','image/webp'])->maxSize(10240),
