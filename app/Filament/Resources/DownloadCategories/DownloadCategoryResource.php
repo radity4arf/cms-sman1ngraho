@@ -52,7 +52,7 @@ class DownloadCategoryResource extends Resource
                 TextInput::make('slug')->label('Slug')->required()->unique(ignoreRecord: true)->maxLength(255),
                 TextInput::make('sort_order')->label('Urutan')->numeric()->default(0),
                 Toggle::make('is_active')->label('Aktif')->default(true),
-            ])->columns(2),
+            ])->columns(2)->columnSpanFull(),
         ]);
     }
 

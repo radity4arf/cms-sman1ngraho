@@ -55,7 +55,7 @@ class DownloadResource extends Resource
             Section::make('Informasi')->schema([
                 TextInput::make('title')->label('Judul')->required()->maxLength(255),
                 Select::make('download_category_id')->label('Kategori')->relationship('category', 'name')->required(),
-            ])->columns(2),
+            ])->columns(2)->columnSpanFull(),
             Section::make('File')->schema([
                 SpatieMediaLibraryFileUpload::make('file')->label('File Unduhan')->collection('file')
                     ->acceptedFileTypes([

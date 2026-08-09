@@ -60,7 +60,7 @@ class HeroSlideResource extends Resource
                 Toggle::make('is_default')->label('Slide Default')
                     ->helperText('Slide fallback — tidak bisa dihapus/dinonaktifkan jika true. Hanya boleh 1.'),
                 TextInput::make('sort_order')->label('Urutan')->numeric()->default(0),
-            ])->columns(2),
+            ])->columns(2)->columnSpanFull(),
             Section::make('Media')->schema([
                 SpatieMediaLibraryFileUpload::make('image')->label('Gambar')->collection('image')
                     ->image()->imageEditor()->acceptedFileTypes(['image/jpeg','image/png','image/webp'])->maxSize(10240),

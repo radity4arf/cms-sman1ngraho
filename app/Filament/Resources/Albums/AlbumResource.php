@@ -55,7 +55,7 @@ class AlbumResource extends Resource
                 TextInput::make('slug')->label('Slug')->required()->unique(ignoreRecord: true)->maxLength(255),
                 Textarea::make('description')->label('Deskripsi')->nullable()->rows(3),
                 TextInput::make('sort_order')->label('Urutan')->numeric()->default(0),
-            ])->columns(2),
+            ])->columns(2)->columnSpanFull(),
             Section::make('Status')->schema([
                 Select::make('status')->label('Status')->options(['draft' => 'Draft', 'published' => 'Publish'])->default('draft')->required(),
                 Toggle::make('is_active')->label('Aktif')->default(true),
