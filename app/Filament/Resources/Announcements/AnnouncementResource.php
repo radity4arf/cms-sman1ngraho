@@ -15,6 +15,7 @@ use App\Filament\Resources\Announcements\Pages;
 use App\Models\Announcement;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
+use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\RichEditor;
@@ -48,16 +49,22 @@ class AnnouncementResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
+            // [THECHNOLOGY-MOD] : Judul & Isi full-width, Tanggal Mulai & Kadaluarsa sejajar narrow
             Section::make('Informasi Pengumuman')->schema([
-                TextInput::make('title')->label('Judul')->required()->maxLength(255),
+                TextInput::make('title')->label('Judul')->required()->maxLength(255)->columnSpanFull(),
                 RichEditor::make('body')->label('Isi')->nullable()->columnSpanFull(),
-                DatePicker::make('expired_at')->label('Kadaluarsa')->nullable()->helperText('Kosongkan jika tidak ada batas waktu'),
+                // [THECHNOLOGY-MOD] : Tanggal Mulai & Kadaluarsa — pasangan rentang tayang, sejajar narrow
+                Grid::make(12)->schema([
+                    DatePicker::make('published_at')->label('Tanggal Mulai')->nullable()->columnSpan(3)
+                        ->helperText('Awal rentang tayang pengumuman'),
+                    DatePicker::make('expired_at')->label('Kadaluarsa')->nullable()->columnSpan(3)
+                        ->helperText('Kosongkan jika tidak ada batas waktu'),
+                ]),
             ])->columnSpanFull(),
             Section::make('Status')->schema([
                 Select::make('status')->label('Status')->options(['draft' => 'Draft', 'published' => 'Publish'])->default('draft')->required(),
                 Toggle::make('is_active')->label('Aktif')->default(true),
-                DateTimePicker::make('published_at')->label('Tanggal Terbit')->nullable(),
-            ])->columns(3),
+            ])->columns(2),
         ]);
     }
 
