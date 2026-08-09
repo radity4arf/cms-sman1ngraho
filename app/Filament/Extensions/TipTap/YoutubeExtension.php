@@ -13,6 +13,84 @@ class YoutubeExtension extends Node
     public static $name = 'youtube';
 
     /**
+     * @return array<string, array<string, mixed>>
+     */
+    public function addAttributes(): array
+    {
+        return [
+            'src' => [
+                'parseHTML' => function ($DOMNode) {
+                    // Cek data-youtube-src di div pembungkus
+                    $dataSrc = $DOMNode->getAttribute('data-youtube-src');
+                    if ($dataSrc) {
+                        return $dataSrc;
+                    }
+
+                    // Cek iframe di dalam div
+                    $iframes = $DOMNode->getElementsByTagName('iframe');
+                    if ($iframes->length > 0) {
+                        return $iframes->item(0)->getAttribute('src') ?: null;
+                    }
+
+                    // Kalau DOMNode sendiri adalah iframe
+                    if ($DOMNode->tagName === 'iframe') {
+                        return $DOMNode->getAttribute('src') ?: null;
+                    }
+
+                    return null;
+                },
+                'renderHTML' => function ($attrs) {
+                    if (empty($attrs->src ?? null)) {
+                        return null;
+                    }
+
+                    $videoId = $this->extractYoutubeId($attrs->src);
+
+                    if ($videoId === null) {
+                        return null;
+                    }
+
+                    return ['data-youtube-src' => "https://www.youtube.com/watch?v={$videoId}"];
+                },
+            ],
+            'start' => [
+                'default' => 0,
+                'parseHTML' => function ($DOMNode) {
+                    // Cek data-youtube-start di div
+                    $dataStart = $DOMNode->getAttribute('data-youtube-start');
+                    if ($dataStart !== '' && $dataStart !== null) {
+                        return (int) $dataStart;
+                    }
+
+                    // Cek parameter start di URL iframe
+                    $iframes = $DOMNode->getElementsByTagName('iframe');
+                    $src = '';
+                    if ($iframes->length > 0) {
+                        $src = $iframes->item(0)->getAttribute('src') ?: '';
+                    } elseif ($DOMNode->tagName === 'iframe') {
+                        $src = $DOMNode->getAttribute('src') ?: '';
+                    }
+
+                    if (preg_match('/[?&]start=(\d+)/', $src, $m)) {
+                        return (int) $m[1];
+                    }
+
+                    return 0;
+                },
+                'renderHTML' => function ($attrs) {
+                    $start = (int) ($attrs->start ?? 0);
+
+                    if ($start <= 0) {
+                        return null;
+                    }
+
+                    return ['data-youtube-start' => $start];
+                },
+            ],
+        ];
+    }
+
+    /**
      * @return array<array<string, mixed>>
      */
     public function parseHTML(): array
@@ -31,7 +109,11 @@ class YoutubeExtension extends Node
      */
     public function renderHTML($node, $HTMLAttributes = []): array
     {
-        $src = $HTMLAttributes['data-youtube-src'] ?? ($node->attrs->src ?? '');
+        // $HTMLAttributes berasal dari addAttributes.renderHTML:
+        // 'data-youtube-src' dan (opsional) 'data-youtube-start'
+        $src = $HTMLAttributes['data-youtube-src']
+            ?? $HTMLAttributes['src']
+            ?? ($node->attrs->src ?? '');
 
         $videoId = $this->extractYoutubeId($src);
 
@@ -45,7 +127,7 @@ class YoutubeExtension extends Node
         return [
             'div',
             [
-                'data-youtube-video' => '',
+                'data-youtube-video' => 'true',
                 'style' => 'position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%;',
             ],
             [

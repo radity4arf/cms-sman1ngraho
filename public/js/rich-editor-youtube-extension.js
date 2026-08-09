@@ -99,7 +99,7 @@ export default Node.create({
         return [
             'div',
             {
-                'data-youtube-video': '',
+                'data-youtube-video': 'true',
                 style: 'position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%;',
             },
             [
@@ -135,7 +135,7 @@ export default Node.create({
     addNodeView() {
         return ({ node, HTMLAttributes }) => {
             const dom = document.createElement('div')
-            dom.setAttribute('data-youtube-video', '')
+            dom.setAttribute('data-youtube-video', 'true')
             dom.style.position = 'relative'
             dom.style.paddingBottom = '56.25%'
             dom.style.height = '0'
