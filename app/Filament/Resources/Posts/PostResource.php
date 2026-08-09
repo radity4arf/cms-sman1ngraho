@@ -50,12 +50,14 @@ class PostResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            // [THECHNOLOGY-MOD] : Section "Informasi Utama" — HANYA Judul + Slug (2 kolom sejajar)
+            // [THECHNOLOGY-MOD] : Section "Informasi Utama" — Judul + Slug, full-width vertikal
             Section::make('Informasi Utama')->schema([
                 TextInput::make('title')->label('Judul')->required()->maxLength(255)->live(onBlur: true)
-                    ->afterStateUpdated(fn ($set, $state) => $set('slug', Post::generateUniqueSlug($state))),
-                TextInput::make('slug')->label('Slug')->required()->unique(ignoreRecord: true)->maxLength(255),
-            ])->columns(2),
+                    ->afterStateUpdated(fn ($set, $state) => $set('slug', Post::generateUniqueSlug($state)))
+                    ->columnSpanFull(),
+                TextInput::make('slug')->label('Slug')->required()->unique(ignoreRecord: true)->maxLength(255)
+                    ->columnSpanFull(),
+            ])->columnSpanFull(),
 
             // [THECHNOLOGY-MOD] : Section "Konten" BARU — Ringkasan + Isi Berita, full-width melebar horizontal
             // [THECHNOLOGY-FIX] : ->columnSpanFull() di level Section agar keluar dari grid 2-kolom dan melebar penuh
