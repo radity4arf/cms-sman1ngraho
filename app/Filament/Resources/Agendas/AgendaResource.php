@@ -15,6 +15,7 @@ use App\Filament\Resources\Agendas\Pages;
 use App\Models\Agenda;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
+use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
@@ -48,10 +49,12 @@ class AgendaResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            // [THECHNOLOGY-MOD] : field vertikal — Tanggal narrow (date picker), sisanya full-width
+            // [THECHNOLOGY-FIX] : Tanggal dibungkus Grid::make(12) supaya columnSpan(4) proporsional — tanpa Grid wrapper, columnSpan tidak berefek di Section tanpa columns()
             Section::make('Informasi Agenda')->schema([
                 TextInput::make('title')->label('Judul')->required()->maxLength(255)->columnSpanFull(),
-                DatePicker::make('event_date')->label('Tanggal')->required()->columnSpan(4),
+                Grid::make(12)->schema([
+                    DatePicker::make('event_date')->label('Tanggal')->required()->columnSpan(4),
+                ]),
                 TextInput::make('location')->label('Lokasi')->nullable()->maxLength(255)->columnSpanFull(),
                 Textarea::make('description')->label('Deskripsi')->nullable()->rows(3)->columnSpanFull(),
             ])->columnSpanFull(),
