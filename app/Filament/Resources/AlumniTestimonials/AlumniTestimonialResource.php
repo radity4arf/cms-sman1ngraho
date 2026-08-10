@@ -77,7 +77,10 @@ class AlumniTestimonialResource extends Resource
             TextColumn::make('profession')->label('Profesi')->searchable()->sortable(),
             TextColumn::make('status')->label('Status')->badge()->color(fn ($s) => $s === 'published' ? 'success' : 'warning')->sortable(),
             ToggleColumn::make('is_active')->label('Aktif')->sortable(),
-        ])->filters([TrashedFilter::make()])->recordActions([\Filament\Actions\EditAction::make()]);
+        ])
+            ->emptyStateHeading('Belum ada Alumni')
+            ->emptyStateDescription('Klik tombol "Buat Alumni" untuk menambahkan data alumni.')
+            ->filters([TrashedFilter::make()])->recordActions([\Filament\Actions\EditAction::make()]);
     }
 
     public static function getPages(): array

@@ -85,7 +85,10 @@ class DownloadResource extends Resource
             TextColumn::make('status')->label('Status')->badge()->color(fn ($s) => $s === 'published' ? 'success' : 'warning')->sortable(),
             ToggleColumn::make('is_active')->label('Aktif')->sortable(),
             TextColumn::make('created_at')->label('Dibuat')->dateTime('d M Y')->sortable(),
-        ])->filters([
+        ])
+            ->emptyStateHeading('Belum ada Unduhan')
+            ->emptyStateDescription('Klik tombol "Buat Unduhan" untuk menambahkan file unduhan baru.')
+            ->filters([
             TrashedFilter::make(),
             SelectFilter::make('download_category_id')->label('Kategori')->relationship('category', 'name'),
         ])->recordActions([\Filament\Actions\EditAction::make()]);

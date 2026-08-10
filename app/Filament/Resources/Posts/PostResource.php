@@ -125,7 +125,10 @@ class PostResource extends Resource
             ToggleColumn::make('is_active')->label('Aktif')->sortable(),
             TextColumn::make('published_at')->label('Terbit')->dateTime('d M Y H:i')->sortable(),
             TextColumn::make('created_at')->label('Dibuat')->dateTime('d M Y')->sortable(),
-        ])->filters([
+        ])
+            ->emptyStateHeading('Belum ada Berita')
+            ->emptyStateDescription('Klik tombol "Buat Berita" untuk menambahkan berita baru.')
+            ->filters([
             TrashedFilter::make(),
         ])->recordActions([
             \Filament\Actions\EditAction::make(),

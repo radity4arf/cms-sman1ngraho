@@ -75,7 +75,10 @@ class AnnouncementResource extends Resource
             TextColumn::make('expired_at')->label('Kadaluarsa')->date('d M Y')->sortable(),
             TextColumn::make('status')->label('Status')->badge()->color(fn ($s) => $s === 'published' ? 'success' : 'warning')->sortable(),
             ToggleColumn::make('is_active')->label('Aktif')->sortable(),
-        ])->filters([TrashedFilter::make()])->recordActions([\Filament\Actions\EditAction::make()]);
+        ])
+            ->emptyStateHeading('Belum ada Pengumuman')
+            ->emptyStateDescription('Klik tombol "Buat Pengumuman" untuk menambahkan pengumuman baru.')
+            ->filters([TrashedFilter::make()])->recordActions([\Filament\Actions\EditAction::make()]);
     }
 
     public static function getPages(): array

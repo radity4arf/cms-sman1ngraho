@@ -63,7 +63,10 @@ class DownloadCategoryResource extends Resource
             TextColumn::make('downloads_count')->label('File')->counts('downloads')->sortable(),
             ToggleColumn::make('is_active')->label('Aktif')->sortable(),
             TextColumn::make('sort_order')->label('Urutan')->sortable(),
-        ])->filters([TrashedFilter::make()])->recordActions([\Filament\Actions\EditAction::make()]);
+        ])
+            ->emptyStateHeading('Belum ada Kategori Unduhan')
+            ->emptyStateDescription('Klik tombol "Buat Kategori Unduhan" untuk menambahkan kategori baru.')
+            ->filters([TrashedFilter::make()])->recordActions([\Filament\Actions\EditAction::make()]);
     }
 
     public static function getPages(): array

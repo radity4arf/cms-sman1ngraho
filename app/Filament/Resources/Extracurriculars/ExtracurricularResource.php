@@ -87,7 +87,10 @@ class ExtracurricularResource extends Resource
             TextColumn::make('status')->label('Status')->badge()->color(fn ($s) => $s === 'published' ? 'success' : 'warning')->sortable(),
             ToggleColumn::make('is_active')->label('Aktif')->sortable(),
             TextColumn::make('sort_order')->label('Urutan')->sortable(),
-        ])->filters([
+        ])
+            ->emptyStateHeading('Belum ada Ekstrakurikuler')
+            ->emptyStateDescription('Klik tombol "Buat Ekstrakurikuler" untuk menambahkan data ekskul.')
+            ->filters([
             TrashedFilter::make(),
             SelectFilter::make('category')->options([
                 'olahraga' => 'Olahraga', 'seni' => 'Seni', 'akademik' => 'Akademik', 'keagamaan' => 'Keagamaan',

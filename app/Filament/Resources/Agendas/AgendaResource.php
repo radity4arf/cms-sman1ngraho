@@ -74,7 +74,10 @@ class AgendaResource extends Resource
             TextColumn::make('location')->label('Lokasi')->searchable()->sortable(),
             TextColumn::make('status')->label('Status')->badge()->color(fn ($s) => $s === 'published' ? 'success' : 'warning')->sortable(),
             ToggleColumn::make('is_active')->label('Aktif')->sortable(),
-        ])->filters([TrashedFilter::make()])->recordActions([\Filament\Actions\EditAction::make()]);
+        ])
+            ->emptyStateHeading('Belum ada Agenda')
+            ->emptyStateDescription('Klik tombol "Buat Agenda" untuk menambahkan agenda baru.')
+            ->filters([TrashedFilter::make()])->recordActions([\Filament\Actions\EditAction::make()]);
     }
 
     public static function getPages(): array

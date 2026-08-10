@@ -82,7 +82,10 @@ class StaffResource extends Resource
             TextColumn::make('status')->label('Status')->badge()->color(fn ($s) => $s === 'published' ? 'success' : 'warning')->sortable(),
             ToggleColumn::make('is_active')->label('Aktif')->sortable(),
             TextColumn::make('sort_order')->label('Urutan')->sortable(),
-        ])->filters([
+        ])
+            ->emptyStateHeading('Belum ada Staff')
+            ->emptyStateDescription('Klik tombol "Buat Staff" untuk menambahkan data Guru & Tenaga Kependidikan.')
+            ->filters([
             TrashedFilter::make(),
             SelectFilter::make('category')->options([
                 'guru' => 'Guru', 'tenaga_kependidikan' => 'Tenaga Kependidikan',
