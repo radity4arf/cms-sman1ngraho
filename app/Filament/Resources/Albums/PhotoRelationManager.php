@@ -4,16 +4,20 @@
  * PhotoRelationManager — Relation Manager untuk foto dalam Album (RT-06)
  *
  * Dikelola via AlbumResource. CRUD foto per album.
+ * Otorisasi: PhotoPolicy (view_any/create/update/delete_photos).
  *
  * @author   DSE (Delia Tse)
  * @created  2026-08-08
+ * @updated  2026-08-10 — tambah CreateAction header + Edit/Delete record actions
  */
 
 // [THECHNOLOGY-CRE] : PhotoRelationManager — kelola foto dalam album
+// [THECHNOLOGY-MOD] : Tambah header CreateAction + record Edit/Delete actions
 
 namespace App\Filament\Resources\Albums;
 
 use App\Models\Photo;
+use Filament\Actions\CreateAction;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
 use Filament\Schemas\Components\Section;
@@ -33,6 +37,18 @@ class PhotoRelationManager extends RelationManager
 
     public static function getModelLabel(): string { return 'Foto'; }
     public static function getPluralModelLabel(): string { return 'Foto'; }
+
+    /**
+     * [THECHNOLOGY-MOD] : Header action — tombol Tambah Foto.
+     * Otorisasi otomatis via PhotoPolicy::create() → create_photos.
+     */
+    protected function getHeaderActions(): array
+    {
+        return [
+            CreateAction::make()
+                ->label('Tambah Foto'),
+        ];
+    }
 
     public function form(Schema $schema): Schema
     {
@@ -55,6 +71,11 @@ class PhotoRelationManager extends RelationManager
         ]);
     }
 
+    /**
+     * [THECHNOLOGY-MOD] : Record actions — Edit + Delete.
+     * Otorisasi otomatis via PhotoPolicy (update → update_photos, delete → delete_photos).
+     * ToggleColumn is_active juga ter-gate via Policy update().
+     */
     public function table(Table $table): Table
     {
         return $table->columns([
@@ -63,6 +84,9 @@ class PhotoRelationManager extends RelationManager
             TextColumn::make('status')->label('Status')->badge()->color(fn ($s) => $s === 'published' ? 'success' : 'warning')->sortable(),
             ToggleColumn::make('is_active')->label('Aktif')->sortable(),
             TextColumn::make('sort_order')->label('Urutan')->sortable(),
+        ])->recordActions([
+            \Filament\Actions\EditAction::make(),
+            \Filament\Actions\DeleteAction::make(),
         ])->defaultSort('sort_order', 'asc');
     }
 }
