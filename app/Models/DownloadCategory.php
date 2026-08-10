@@ -17,6 +17,7 @@ namespace App\Models;
 use App\Traits\HasAudit;
 use App\Traits\HasOrdering;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -27,7 +28,7 @@ use Illuminate\Support\Str;
 ])]
 class DownloadCategory extends Model
 {
-    use SoftDeletes, HasAudit, HasOrdering;
+    use HasFactory, SoftDeletes, HasAudit, HasOrdering;
 
     protected function casts(): array
     {

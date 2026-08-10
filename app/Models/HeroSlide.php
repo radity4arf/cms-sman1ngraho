@@ -21,6 +21,7 @@ use App\Traits\HasAudit;
 use App\Traits\HasOrdering;
 use App\Traits\HasPublishWorkflow;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\DB;
@@ -33,7 +34,7 @@ use Spatie\MediaLibrary\InteractsWithMedia;
 ])]
 class HeroSlide extends Model implements HasMedia
 {
-    use SoftDeletes, HasAudit, HasPublishWorkflow, HasOrdering;
+    use HasFactory, SoftDeletes, HasAudit, HasPublishWorkflow, HasOrdering;
     use InteractsWithMedia;
 
     /**

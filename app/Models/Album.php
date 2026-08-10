@@ -20,6 +20,7 @@ use App\Traits\HasOrdering;
 use App\Traits\HasPublishWorkflow;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -32,7 +33,7 @@ use Illuminate\Support\Str;
 ])]
 class Album extends Model
 {
-    use SoftDeletes, HasAudit, HasPublishWorkflow, HasOrdering;
+    use HasFactory, SoftDeletes, HasAudit, HasPublishWorkflow, HasOrdering;
 
     protected function casts(): array
     {

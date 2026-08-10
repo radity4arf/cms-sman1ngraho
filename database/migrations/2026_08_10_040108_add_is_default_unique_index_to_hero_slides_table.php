@@ -23,20 +23,27 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // [THECHNOLOGY-CRE] : functional unique index — hanya enforce unique pada is_default=true
-        // CASE WHEN is_default = 1 THEN 1 END mengembalikan 1 untuk record default,
-        // NULL untuk non-default. MySQL mengizinkan multiple NULL di unique index,
-        // sehingga hanya record is_default=true yang dibatasi maksimal 1.
-        DB::statement(
-            'CREATE UNIQUE INDEX hero_slides_is_default_true_unique'
-            . ' ON hero_slides ((CASE WHEN is_default = 1 THEN 1 END))'
-        );
+        // [THECHNOLOGY-FIX] : driver-aware — functional index hanya untuk MySQL 8.0.13+.
+        // SQLite tidak mendukung expression index; skip di environment testing.
+        // Aplikasi-level lock (HeroSlide model) tetap menjadi guard utama.
+        $driver = DB::connection()->getDriverName();
+
+        if ($driver === 'mysql') {
+            DB::statement(
+                'CREATE UNIQUE INDEX hero_slides_is_default_true_unique'
+                . ' ON hero_slides ((CASE WHEN is_default = 1 THEN 1 END))'
+            );
+        }
     }
 
     public function down(): void
     {
-        Schema::table('hero_slides', function (Blueprint $table) {
-            $table->dropIndex('hero_slides_is_default_true_unique');
-        });
+        $driver = DB::connection()->getDriverName();
+
+        if ($driver === 'mysql') {
+            Schema::table('hero_slides', function (Blueprint $table) {
+                $table->dropIndex('hero_slides_is_default_true_unique');
+            });
+        }
     }
 };
