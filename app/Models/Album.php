@@ -44,9 +44,12 @@ class Album extends Model
         ];
     }
 
+    // [THECHNOLOGY-FIX] : Terapkan scope ordered() dari HasOrdering ke relasi
+    // supaya urutan sort_order + tiebreak id ASC (RT-17) benar-benar jalan,
+    // bukan cuma tersedia tapi tidak dipakai (CGX Fase 3 Minor #4).
     public function photos(): HasMany
     {
-        return $this->hasMany(Photo::class);
+        return $this->hasMany(Photo::class)->ordered();
     }
 
     /**

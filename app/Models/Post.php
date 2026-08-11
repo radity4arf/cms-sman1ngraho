@@ -14,6 +14,7 @@ namespace App\Models;
 use App\Traits\HasAudit;
 use App\Traits\HasPublishWorkflow;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
@@ -26,7 +27,7 @@ use Spatie\MediaLibrary\InteractsWithMedia;
 ])]
 class Post extends Model implements HasMedia
 {
-    use SoftDeletes, HasAudit, HasPublishWorkflow;
+    use HasFactory, SoftDeletes, HasAudit, HasPublishWorkflow;
     use InteractsWithMedia;
 
     protected function casts(): array
