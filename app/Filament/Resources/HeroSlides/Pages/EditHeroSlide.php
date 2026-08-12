@@ -5,13 +5,13 @@
  *
  * @author   DSE (Delia Tse)
  * @created  2026-08-08
- * @updated  2026-08-12 — CLX fix: tambah PromoteAsDefaultAction via HeroSlideService
+ * @updated  2026-08-12 — Restrukturisasi: isDefault() via config
  */
 
 // [THECHNOLOGY-CRE] : EditHeroSlide page
 // [THECHNOLOGY-FIX] : DeleteAction di-hidden untuk record is_default=true
-// [THECHNOLOGY-FIX] : beforeDelete() + beforeSave() tangkap aksi terlarang SEBELUM model — tampilkan Notification Filament, bukan error 500
-// [THECHNOLOGY-MOD] : Promosikan via HeroSlideService::promoteAsDefault() — satu-satunya jalur UI resmi swap is_default
+// [THECHNOLOGY-FIX] : beforeDelete() + beforeSave() tangkap aksi terlarang SEBELUM model
+// [THECHNOLOGY-MOD] : isDefault() via HeroSlideConfig — ganti is_default boolean
 
 namespace App\Filament\Resources\HeroSlides\Pages;
 
@@ -42,7 +42,7 @@ class EditHeroSlide extends EditRecord
                 ->modalDescription('Slide ini akan menjadi slide default menggantikan slide default yang ada saat ini. Lanjutkan?')
                 ->modalSubmitActionLabel('Ya, jadikan default')
                 ->visible(fn (HeroSlide $record): bool =>
-                    ! $record->is_default
+                    ! $record->isDefault()
                     && $record->status === ContentStatus::Published
                     && $record->is_active
                 )
@@ -63,14 +63,14 @@ class EditHeroSlide extends EditRecord
                 }),
             DeleteAction::make()
                 // [THECHNOLOGY-FIX] : Sembunyikan tombol delete untuk slide default
-                ->hidden(fn (HeroSlide $record): bool => $record->is_default),
+                ->hidden(fn (HeroSlide $record): bool => $record->isDefault()),
         ];
     }
 
     // [THECHNOLOGY-FIX] : Tangkap delete sebelum model — tampilkan notifikasi rapi, bukan error 500 mentah
     protected function beforeDelete(): void
     {
-        if ($this->getRecord()->is_default) {
+        if ($this->getRecord()->isDefault()) {
             Notification::make()
                 ->title('Aksi Ditolak')
                 ->body('Slide default tidak dapat dihapus.')
@@ -86,7 +86,7 @@ class EditHeroSlide extends EditRecord
     {
         $record = $this->getRecord();
 
-        if (! $record->is_default) {
+        if (! $record->isDefault()) {
             return;
         }
 

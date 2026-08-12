@@ -1,32 +1,20 @@
 <?php
 
 /**
- * HeroSlideGuardTest — Unit/Feature test untuk guard is_default HeroSlide
- *
- * Mencakup:
- * - Atomic swap is_default via HeroSlideService::promoteAsDefault()
- * - Tolak UNCONDITIONAL unset is_default true→false di luar service
- * - Tolak create draft+default
- * - Tolak create inactive+default
- * - Tolak save default dengan status draft/inactive
- * - Regresi guard delete/draft/nonaktif existing (Task 1 Poin 2)
+ * HeroSlideGuardTest — Test guard & service untuk HeroSlide (restrukturisasi)
  *
  * @author   DSE (Delia Tse)
  * @created  2026-08-10
- * @updated  2026-08-11 — strict CGX review fix: service-only swap, reject draft/inactive default
- * @updated  2026-08-12 — CLX fix: token-guard tests, flag-reset-after-swap test
- * @updated  2026-08-12 — CGX fix lanjutan: Query Builder bypass tests + regresi swap sah
+ * @updated  2026-08-12 — Restrukturisasi total: rewrite dari nol
  */
 
-// [THECHNOLOGY-CRE] : HeroSlideGuardTest
-// [THECHNOLOGY-FIX] : Strict CGX — service-only swap, draft+default ditolak, unset langsung ditolak
-// [THECHNOLOGY-MOD] : Tes token-guard beginSwap/endSwap + flag reset — CLX review fix
-// [THECHNOLOGY-MOD] : Tes Query Builder bypass + regresi swap sah — CGX fix lanjutan
+// [THECHNOLOGY-CRE] : HeroSlideGuardTest — restrukturisasi total
 
 namespace Tests\Feature;
 
 use App\Enums\ContentStatus;
 use App\Models\HeroSlide;
+use App\Models\HeroSlideConfig;
 use App\Services\HeroSlideService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -35,529 +23,180 @@ class HeroSlideGuardTest extends TestCase
 {
     use RefreshDatabase;
 
-    // ──────────────────────────────────────────────────
-    // PROMOTE AS DEFAULT — service
-    // ──────────────────────────────────────────────────
-
-    /**
-     * [THECHNOLOGY-FIX] : HeroSlideService::promoteAsDefault() — swap default.
-     * Slide baru menjadi default, slide lama di-unset, hanya 1 default.
-     */
-    public function test_promote_as_default_service_swaps_correctly(): void
+    protected function setUp(): void
     {
-        // Arrange: slide A default, slide B published+aktif non-default
-        $slideA = HeroSlide::factory()->default()->create([
-            'title'     => 'Slide A',
-            'status'    => ContentStatus::Published->value,
-            'is_active' => true,
-        ]);
-        $slideB = HeroSlide::factory()->create([
-            'title'     => 'Slide B',
-            'status'    => ContentStatus::Published->value,
-            'is_active' => true,
-            'is_default'=> false,
-        ]);
-
-        $this->assertTrue($slideA->fresh()->is_default);
-        $this->assertFalse($slideB->fresh()->is_default);
-
-        // Act: promosikan slide B via service
-        HeroSlideService::promoteAsDefault($slideB);
-
-        // Assert: slide B jadi default, slide A tidak
-        $this->assertFalse($slideA->fresh()->is_default, 'Slide A harus di-unset');
-        $this->assertTrue($slideB->fresh()->is_default, 'Slide B harus jadi default');
-        $this->assertEquals(1, HeroSlide::where('is_default', true)->count(),
-            'Hanya boleh ada 1 slide default');
+        parent::setUp();
+        HeroSlideConfig::firstOrCreate([], ['default_hero_slide_id' => null]);
     }
 
-    /**
-     * [THECHNOLOGY-FIX] : promoteAsDefault() tolak slide draft.
-     * Service harus validasi status=published sebelum swap.
-     */
+    // ─── PROMOTE AS DEFAULT ──────────────────────────
+
+    public function test_promote_as_default_works_for_published_active_slide(): void
+    {
+        $slide = HeroSlide::factory()->create([
+            'status' => ContentStatus::Published->value, 'is_active' => true,
+        ]);
+        HeroSlideService::promoteAsDefault($slide);
+        $this->assertEquals($slide->id, HeroSlideConfig::defaultSlideId());
+        $this->assertTrue($slide->isDefault());
+    }
+
     public function test_promote_as_default_rejects_draft_slide(): void
     {
         $slide = HeroSlide::factory()->draft()->create([
-            'status'    => ContentStatus::Draft->value,
-            'is_active' => true,
+            'status' => ContentStatus::Draft->value, 'is_active' => true,
         ]);
-
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('draft');
-
         HeroSlideService::promoteAsDefault($slide);
     }
 
-    /**
-     * [THECHNOLOGY-FIX] : promoteAsDefault() tolak slide nonaktif.
-     * Service harus validasi is_active=true sebelum swap.
-     */
     public function test_promote_as_default_rejects_inactive_slide(): void
     {
         $slide = HeroSlide::factory()->inactive()->create([
-            'status'    => ContentStatus::Published->value,
-            'is_active' => false,
+            'status' => ContentStatus::Published->value, 'is_active' => false,
         ]);
-
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('tidak aktif');
-
         HeroSlideService::promoteAsDefault($slide);
     }
 
-    // ──────────────────────────────────────────────────
-    // ATOMIC SWAP — via saving event (create/update is_default=true)
-    // ──────────────────────────────────────────────────
-
-    /**
-     * [THECHNOLOGY-CRE] : Atomic swap — dua create is_default=true.
-     * Model-level saving event harus meng-unset default lama sehingga
-     * hanya satu is_default=true di akhir.
-     */
-    public function test_atomic_swap_on_create_ensures_single_default(): void
+    public function test_promote_as_default_swaps_existing_default(): void
     {
-        $first = HeroSlide::factory()->default()->create(['title' => 'Slide A']);
-        $this->assertTrue($first->fresh()->is_default);
+        $slideA = HeroSlide::factory()->create(['title' => 'A', 'status' => ContentStatus::Published->value, 'is_active' => true]);
+        $slideB = HeroSlide::factory()->create(['title' => 'B', 'status' => ContentStatus::Published->value, 'is_active' => true]);
 
-        $second = HeroSlide::factory()->default()->create(['title' => 'Slide B']);
+        HeroSlideService::promoteAsDefault($slideA);
+        $this->assertEquals($slideA->id, HeroSlideConfig::defaultSlideId());
 
-        $this->assertFalse($first->fresh()->is_default, 'Slide lama harus di-unset');
-        $this->assertTrue($second->fresh()->is_default, 'Slide baru harus menjadi default');
-        $this->assertEquals(1, HeroSlide::where('is_default', true)->count(),
-            'Hanya boleh ada 1 slide default');
+        HeroSlideService::promoteAsDefault($slideB);
+        $this->assertEquals($slideB->id, HeroSlideConfig::defaultSlideId());
+        $this->assertFalse($slideA->isDefault());
+        $this->assertTrue($slideB->isDefault());
     }
 
-    /**
-     * [THECHNOLOGY-CRE] : Atomic swap — update is_default false→true.
-     * Model-level saving harus meng-unset default existing.
-     */
-    public function test_atomic_swap_on_update_ensures_single_default(): void
+    // ─── IS DEFAULT CHECK ────────────────────────────
+
+    public function test_is_default_returns_false_when_config_is_null(): void
     {
-        $first = HeroSlide::factory()->default()->create(['title' => 'Slide A']);
-        $second = HeroSlide::factory()->create(['title' => 'Slide B', 'is_default' => false]);
-        $this->assertTrue($first->fresh()->is_default);
-
-        $second->is_default = true;
-        $second->save();
-
-        $this->assertFalse($first->fresh()->is_default);
-        $this->assertTrue($second->fresh()->is_default);
-        $this->assertEquals(1, HeroSlide::where('is_default', true)->count());
+        HeroSlideConfig::current()->update(['default_hero_slide_id' => null]);
+        $slide = HeroSlide::factory()->create();
+        $this->assertFalse($slide->isDefault());
     }
 
-    // ──────────────────────────────────────────────────
-    // TOLAK UNSET DEFAULT LANGSUNG (tanpa service)
-    // ──────────────────────────────────────────────────
-
-    /**
-     * [THECHNOLOGY-FIX] : Tolak SEMUA unset is_default true→false
-     * yang tidak melalui service/swap. Bahkan jika ada kandidat pengganti.
-     * Ini perbaikan dari bug CGX — test lama MALAH mengesahkan bug ini.
-     */
-    public function test_reject_direct_unset_default_even_with_replacement(): void
+    public function test_is_default_returns_false_for_non_default_slide(): void
     {
-        // Arrange: slide default + kandidat published+aktif
-        $default = HeroSlide::factory()->default()->create([
-            'title'     => 'Default',
-            'status'    => ContentStatus::Published->value,
-            'is_active' => true,
-        ]);
-        HeroSlide::factory()->create([
-            'title'     => 'Kandidat',
-            'status'    => ContentStatus::Published->value,
-            'is_active' => true,
-            'is_default'=> false,
-        ]);
-
-        // Act & Assert: unset langsung → TETAP ditolak
-        $this->expectException(\RuntimeException::class);
-        $this->expectExceptionMessage('HeroSlideService::promoteAsDefault');
-
-        $default->is_default = false;
-        $default->save();
+        $default = HeroSlide::factory()->create();
+        $other = HeroSlide::factory()->create();
+        HeroSlideService::promoteAsDefault($default);
+        $this->assertTrue($default->isDefault());
+        $this->assertFalse($other->isDefault());
     }
 
-    /**
-     * [THECHNOLOGY-CRE] : Tolak unset is_default true→false tanpa kandidat pengganti.
-     * Harus throw RuntimeException, bukan silent fail.
-     */
-    public function test_reject_unset_default_without_replacement(): void
+    // ─── GUARD: DELETE ───────────────────────────────
+
+    public function test_cannot_delete_default_slide(): void
     {
-        $slide = HeroSlide::factory()->default()->create([
-            'status'    => ContentStatus::Published->value,
-            'is_active' => true,
-        ]);
+        $slide = HeroSlide::factory()->create(['status' => ContentStatus::Published->value, 'is_active' => true]);
+        HeroSlideService::promoteAsDefault($slide);
 
         $this->expectException(\RuntimeException::class);
-        $this->expectExceptionMessage('HeroSlideService::promoteAsDefault');
-
-        $slide->is_default = false;
-        $slide->save();
-    }
-
-    // ──────────────────────────────────────────────────
-    // TOLAK CREATE DRAFT + DEFAULT / INACTIVE + DEFAULT
-    // ──────────────────────────────────────────────────
-
-    /**
-     * [THECHNOLOGY-FIX] : Tolak create is_default=true dengan status=draft.
-     * Default wajib published dari awal. Ini adalah bug yang ditemukan CGX.
-     */
-    public function test_reject_create_draft_default(): void
-    {
-        $this->expectException(\RuntimeException::class);
-        $this->expectExceptionMessage('draft');
-
-        HeroSlide::factory()->default()->draft()->create([
-            'status'    => ContentStatus::Draft->value,
-            'is_active' => true,
-        ]);
-    }
-
-    /**
-     * [THECHNOLOGY-FIX] : Tolak create is_default=true dengan is_active=false.
-     * Default wajib aktif dari awal. Ini adalah bug yang ditemukan CGX.
-     */
-    public function test_reject_create_inactive_default(): void
-    {
-        $this->expectException(\RuntimeException::class);
-        $this->expectExceptionMessage('nonaktif');
-
-        HeroSlide::factory()->default()->inactive()->create([
-            'status'    => ContentStatus::Published->value,
-            'is_active' => false,
-        ]);
-    }
-
-    // ──────────────────────────────────────────────────
-    // REGRESI — guard delete/draft/nonaktif
-    // ──────────────────────────────────────────────────
-
-    /**
-     * [THECHNOLOGY-CRE] : Regresi — guard delete default tetap aktif.
-     */
-    public function test_regression_guard_delete_default_still_works(): void
-    {
-        $slide = HeroSlide::factory()->default()->create();
-
-        $this->expectException(\RuntimeException::class);
-        $this->expectExceptionMessage('Slide default tidak dapat dihapus');
-
+        $this->expectExceptionMessage('tidak dapat dihapus');
         $slide->delete();
     }
 
-    /**
-     * [THECHNOLOGY-CRE] : Regresi — guard draft default tetap aktif.
-     */
-    public function test_regression_guard_draft_default_still_works(): void
-    {
-        $slide = HeroSlide::factory()->default()->create([
-            'status' => ContentStatus::Published->value,
-        ]);
-
-        $this->expectException(\RuntimeException::class);
-        $this->expectExceptionMessage('draft');
-
-        $slide->status = ContentStatus::Draft->value;
-        $slide->save();
-    }
-
-    /**
-     * [THECHNOLOGY-CRE] : Regresi — guard nonaktifkan default tetap aktif.
-     */
-    public function test_regression_guard_deactivate_default_still_works(): void
-    {
-        $slide = HeroSlide::factory()->default()->create([
-            'is_active' => true,
-        ]);
-
-        $this->expectException(\RuntimeException::class);
-        $this->expectExceptionMessage('Slide default tidak dapat dinonaktifkan');
-
-        $slide->is_active = false;
-        $slide->save();
-    }
-
-    // ──────────────────────────────────────────────────
-    // REGRESI — operasi non-default tetap berfungsi
-    // ──────────────────────────────────────────────────
-
-    /**
-     * [THECHNOLOGY-CRE] : Delete non-default slide — harus berhasil.
-     */
     public function test_can_delete_non_default_slide(): void
     {
-        $slide = HeroSlide::factory()->create(['is_default' => false]);
-
+        $slide = HeroSlide::factory()->create();
         $slide->delete();
-
         $this->assertSoftDeleted($slide);
     }
 
-    /**
-     * [THECHNOLOGY-FIX] : Save default dengan status=draft via update -> ditolak.
-     * Test bahwa guard saving juga menolak update yang mengarah ke draft+default.
-     */
-    public function test_reject_save_existing_default_as_draft(): void
-    {
-        // Buat default yang valid dulu
-        $slide = HeroSlide::factory()->default()->create([
-            'status'    => ContentStatus::Published->value,
-            'is_active' => true,
-        ]);
+    // ─── GUARD: DRAFT / NONAKTIF ─────────────────────
 
-        // Coba ubah status jadi draft
+    public function test_cannot_draft_default_slide(): void
+    {
+        $slide = HeroSlide::factory()->create(['status' => ContentStatus::Published->value, 'is_active' => true]);
+        HeroSlideService::promoteAsDefault($slide);
+
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('draft');
-
         $slide->status = ContentStatus::Draft->value;
         $slide->save();
     }
 
-    /**
-     * [THECHNOLOGY-FIX] : Save default dengan is_active=false via update -> ditolak.
-     */
-    public function test_reject_save_existing_default_as_inactive(): void
+    public function test_cannot_deactivate_default_slide(): void
     {
-        $slide = HeroSlide::factory()->default()->create([
-            'status'    => ContentStatus::Published->value,
-            'is_active' => true,
-        ]);
+        $slide = HeroSlide::factory()->create(['status' => ContentStatus::Published->value, 'is_active' => true]);
+        HeroSlideService::promoteAsDefault($slide);
 
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('dinonaktifkan');
-
         $slide->is_active = false;
         $slide->save();
     }
 
-    // ──────────────────────────────────────────────────
-    // TOKEN GUARD — beginSwap/endSwap
-    // ──────────────────────────────────────────────────
-
-    /**
-     * [THECHNOLOGY-MOD] : beginSwap() tanpa token valid → throw.
-     * Cegah panggilan dari Tinker/job untuk bypass guard.
-     */
-    public function test_begin_swap_rejects_invalid_token(): void
+    public function test_can_draft_non_default_slide(): void
     {
-        $this->expectException(\RuntimeException::class);
-        $this->expectExceptionMessage('beginSwap() hanya dapat dipanggil oleh HeroSlideService');
-
-        HeroSlide::beginSwap('');
+        $slide = HeroSlide::factory()->create(['status' => ContentStatus::Published->value, 'is_active' => true]);
+        $slide->status = ContentStatus::Draft;
+        $slide->save();
+        $this->assertEquals(ContentStatus::Draft, $slide->fresh()->status);
     }
 
-    /**
-     * [THECHNOLOGY-MOD] : beginSwap() dengan token salah → throw.
-     */
-    public function test_begin_swap_rejects_wrong_token(): void
-    {
-        $this->expectException(\RuntimeException::class);
-        $this->expectExceptionMessage('beginSwap() hanya dapat dipanggil oleh HeroSlideService');
+    // ─── CONFIG INTEGRITY ────────────────────────────
 
-        HeroSlide::beginSwap('some-random-string');
+    public function test_config_always_has_exactly_one_row(): void
+    {
+        $this->assertEquals(1, HeroSlideConfig::count());
+        HeroSlideConfig::current();
+        $this->assertEquals(1, HeroSlideConfig::count());
+        HeroSlideConfig::current();
+        $this->assertEquals(1, HeroSlideConfig::count());
     }
 
-    /**
-     * [THECHNOLOGY-MOD] : beginSwap() dengan token benar → diterima.
-     */
-    public function test_begin_swap_accepts_valid_token(): void
+    public function test_config_default_is_null_when_slide_deleted(): void
     {
-        HeroSlide::beginSwap(HeroSlide::SWAP_TOKEN);
+        $slide = HeroSlide::factory()->create();
+        HeroSlideService::promoteAsDefault($slide);
+        $this->assertEquals($slide->id, HeroSlideConfig::defaultSlideId());
 
-        // Verifikasi flag terpasang — unset langsung tidak boleh throw
-        $slide = HeroSlide::factory()->default()->create([
-            'status'    => ContentStatus::Published->value,
-            'is_active' => true,
-        ]);
+        // Delete via DB facade — bypass model guard untuk test FK ON DELETE SET NULL
+        \Illuminate\Support\Facades\DB::table('hero_slides')->where('id', $slide->id)->delete();
 
-        // Ini seharusnya tidak throw karena flag swap=true
-        $slide->is_default = false;
+        $this->assertNull(HeroSlideConfig::first()->refresh()->default_hero_slide_id);
+    }
+
+    // ─── RACE CONDITION ──────────────────────────────
+
+    public function test_concurrent_promotes_result_in_consistent_state(): void
+    {
+        $slideA = HeroSlide::factory()->create(['title' => 'A', 'status' => ContentStatus::Published->value, 'is_active' => true]);
+        $slideB = HeroSlide::factory()->create(['title' => 'B', 'status' => ContentStatus::Published->value, 'is_active' => true]);
+
+        \Illuminate\Support\Facades\DB::transaction(function () use ($slideA) {
+            HeroSlideService::promoteAsDefault($slideA);
+        });
+        \Illuminate\Support\Facades\DB::transaction(function () use ($slideB) {
+            HeroSlideService::promoteAsDefault($slideB);
+        });
+
+        $config = HeroSlideConfig::first()->refresh();
+        $this->assertEquals($slideB->id, $config->default_hero_slide_id);
+        $this->assertEquals(1, HeroSlideConfig::count());
+    }
+
+    // ─── REGRESI ─────────────────────────────────────
+
+    public function test_can_update_non_guard_fields_on_default_slide(): void
+    {
+        $slide = HeroSlide::factory()->create(['title' => 'Old', 'status' => ContentStatus::Published->value, 'is_active' => true]);
+        HeroSlideService::promoteAsDefault($slide);
+
+        $slide->title = 'New';
         $slide->save();
 
-        // Cleanup
-        HeroSlide::endSwap(HeroSlide::SWAP_TOKEN);
-
-        $this->assertFalse($slide->fresh()->is_default);
-    }
-
-    /**
-     * [THECHNOLOGY-MOD] : endSwap() tanpa token valid → throw.
-     */
-    public function test_end_swap_rejects_invalid_token(): void
-    {
-        $this->expectException(\RuntimeException::class);
-        $this->expectExceptionMessage('endSwap() hanya dapat dipanggil oleh HeroSlideService');
-
-        HeroSlide::endSwap('');
-    }
-
-    /**
-     * [THECHNOLOGY-MOD] : endSwap() dengan token benar → diterima.
-     */
-    public function test_end_swap_accepts_valid_token(): void
-    {
-        // Set flag dulu via token valid
-        HeroSlide::beginSwap(HeroSlide::SWAP_TOKEN);
-
-        // Reset flag via token valid — tidak boleh throw
-        HeroSlide::endSwap(HeroSlide::SWAP_TOKEN);
-
-        // Verifikasi flag sudah di-reset: unset langsung tanpa service harus throw lagi
-        $slide = HeroSlide::factory()->default()->create([
-            'status'    => ContentStatus::Published->value,
-            'is_active' => true,
-        ]);
-
-        $this->expectException(\RuntimeException::class);
-        $this->expectExceptionMessage('HeroSlideService::promoteAsDefault');
-
-        $slide->is_default = false;
-        $slide->save();
-    }
-
-    /**
-     * [THECHNOLOGY-MOD] : Pastikan flag swap di-reset setelah promoteAsDefault.
-     * Setelah service selesai, unset langsung harus ditolak lagi.
-     */
-    public function test_flag_reset_after_promote_as_default(): void
-    {
-        $slideA = HeroSlide::factory()->default()->create([
-            'title'     => 'Slide A',
-            'status'    => ContentStatus::Published->value,
-            'is_active' => true,
-        ]);
-        $slideB = HeroSlide::factory()->create([
-            'title'     => 'Slide B',
-            'status'    => ContentStatus::Published->value,
-            'is_active' => true,
-            'is_default'=> false,
-        ]);
-
-        // Promosikan via service — flag harus di-reset setelahnya
-        HeroSlideService::promoteAsDefault($slideB);
-
-        // Sekarang slide B adalah default. Coba unset langsung → harus ditolak
-        $this->expectException(\RuntimeException::class);
-        $this->expectExceptionMessage('HeroSlideService::promoteAsDefault');
-
-        $slideB->is_default = false;
-        $slideB->save();
-    }
-
-    // ──────────────────────────────────────────────────
-    // QUERY BUILDER BYPASS — DB trigger guard
-    // ──────────────────────────────────────────────────
-
-    /**
-     * [THECHNOLOGY-MOD] : Query Builder update() bypass Eloquent events —
-     * unset is_default langsung pada slide default TANPA pengganti → DITOLAK
-     * oleh DB trigger.
-     *
-     * Ini adalah skenario persis yang jadi concern CGX: HeroSlide::query()
-     * ->where('id', X)->update(['is_default' => false]) tidak memicu
-     * model event, jadi model-level guard tidak berlaku.
-     */
-    public function test_query_builder_unset_default_without_replacement_is_rejected(): void
-    {
-        // Arrange: 1 slide default published+aktif
-        $default = HeroSlide::factory()->default()->create([
-            'title'     => 'Default',
-            'status'    => ContentStatus::Published->value,
-            'is_active' => true,
-        ]);
-
-        // Act & Assert: Query Builder unset langsung → DB trigger harus tolak
-        $this->expectException(\Illuminate\Database\QueryException::class);
-
-        HeroSlide::query()
-            ->where('id', $default->id)
-            ->update(['is_default' => false]);
-    }
-
-    /**
-     * [THECHNOLOGY-MOD] : Query Builder unset is_default dengan kandidat
-     * pengganti TETAP ditolak — karena kandidat belum dipromosikan via
-     * service (swap flag tidak disetel).
-     *
-     * Query Builder tidak menyetel session variable / flag table,
-     * jadi trigger tetap memblokir.
-     */
-    public function test_query_builder_unset_default_even_with_candidate_is_rejected(): void
-    {
-        // Arrange: default + kandidat published+aktif
-        $default = HeroSlide::factory()->default()->create([
-            'title'     => 'Default',
-            'status'    => ContentStatus::Published->value,
-            'is_active' => true,
-        ]);
-        HeroSlide::factory()->create([
-            'title'     => 'Kandidat',
-            'status'    => ContentStatus::Published->value,
-            'is_active' => true,
-            'is_default'=> false,
-        ]);
-
-        // Act & Assert: Query Builder unset → tetap ditolak (flag swap tidak disetel)
-        $this->expectException(\Illuminate\Database\QueryException::class);
-
-        HeroSlide::query()
-            ->where('id', $default->id)
-            ->update(['is_default' => false]);
-    }
-
-    /**
-     * [THECHNOLOGY-MOD] : Regresi — swap sah lewat promoteAsDefault() tetap
-     * berhasil meskipun DB trigger unset guard sudah aktif.
-     *
-     * Service menyetel session variable/flag table SEBELUM unset,
-     * jadi trigger mengizinkan unset dalam konteks swap.
-     */
-    public function test_legitimate_swap_via_service_still_works_with_trigger_active(): void
-    {
-        $slideA = HeroSlide::factory()->default()->create([
-            'title'     => 'Slide A',
-            'status'    => ContentStatus::Published->value,
-            'is_active' => true,
-        ]);
-        $slideB = HeroSlide::factory()->create([
-            'title'     => 'Slide B',
-            'status'    => ContentStatus::Published->value,
-            'is_active' => true,
-            'is_default'=> false,
-        ]);
-
-        // Act: swap via service — harus berhasil (tidak false-positive block)
-        HeroSlideService::promoteAsDefault($slideB);
-
-        // Assert
-        $this->assertFalse($slideA->fresh()->is_default, 'Slide A harus di-unset');
-        $this->assertTrue($slideB->fresh()->is_default, 'Slide B harus jadi default');
-        $this->assertEquals(1, HeroSlide::where('is_default', true)->count());
-    }
-
-    /**
-     * [THECHNOLOGY-MOD] : Regresi — factory create default tetap berhasil.
-     * saving() event internal menyetel swap flag → trigger mengizinkan unset.
-     */
-    public function test_factory_create_default_still_works_with_trigger_active(): void
-    {
-        $first = HeroSlide::factory()->default()->create([
-            'title'     => 'First Default',
-            'status'    => ContentStatus::Published->value,
-            'is_active' => true,
-        ]);
-        $this->assertTrue($first->fresh()->is_default);
-
-        // Create second default via factory — saving() event swap harus berhasil
-        $second = HeroSlide::factory()->default()->create([
-            'title'     => 'Second Default',
-            'status'    => ContentStatus::Published->value,
-            'is_active' => true,
-        ]);
-
-        $this->assertFalse($first->fresh()->is_default, 'Slide pertama harus di-unset');
-        $this->assertTrue($second->fresh()->is_default, 'Slide kedua harus jadi default');
-        $this->assertEquals(1, HeroSlide::where('is_default', true)->count());
+        $this->assertEquals('New', $slide->fresh()->title);
+        $this->assertTrue($slide->fresh()->isDefault());
     }
 }

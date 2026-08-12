@@ -3,17 +3,16 @@
 /**
  * HeroSlideResource — Filament CRUD untuk Hero Slider (RT-15)
  *
- * is_default=true di-guard dari delete/draft/nonaktif via policy.
- * is_default TIDAK bisa dimutasi langsung dari form — gunakan
- * tombol "Jadikan Default" di halaman edit (via HeroSlideService).
+ * Status default via HeroSlideConfig (single source of truth).
+ * Tidak bisa dimutasi langsung dari form — gunakan tombol "Jadikan Default".
  *
  * @author   DSE (Delia Tse)
  * @created  2026-08-08
- * @updated  2026-08-12 — CLX fix: hapus Toggle is_default dari form, ganti Placeholder
+ * @updated  2026-08-12 — Restrukturisasi: isDefault() via config
  */
 
 // [THECHNOLOGY-CRE] : HeroSlideResource
-// [THECHNOLOGY-MOD] : Hapus Toggle is_default — ganti Placeholder readonly (CLX fix)
+// [THECHNOLOGY-MOD] : isDefault() via HeroSlideConfig — ganti boolean is_default
 
 namespace App\Filament\Resources\HeroSlides;
 
@@ -30,7 +29,6 @@ use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Filament\Tables\Table;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\SpatieMediaLibraryImageColumn;
-use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Support\Icons\Heroicon;
@@ -63,7 +61,7 @@ class HeroSlideResource extends Resource
                 \Filament\Forms\Components\Placeholder::make('is_default_status')
                     ->label('Status Default')
                     ->content(fn (?\App\Models\HeroSlide $record): string =>
-                        $record?->is_default
+                        $record?->isDefault()
                             ? 'Ya — slide ini adalah default (tidak dapat diubah langsung)'
                             : 'Bukan — gunakan tombol "Jadikan Default" di halaman edit untuk mempromosikan'
                     )
@@ -87,7 +85,12 @@ class HeroSlideResource extends Resource
         return $table->columns([
             SpatieMediaLibraryImageColumn::make('image')->label('Gambar')->collection('image')->conversion('thumb'),
             TextColumn::make('title')->label('Judul')->searchable()->sortable(),
-            IconColumn::make('is_default')->label('Default')->boolean()->sortable(),
+            TextColumn::make('default_status')
+                ->label('Default')
+                ->badge()
+                ->color(fn (HeroSlide $record): string => $record->isDefault() ? 'success' : 'gray')
+                ->formatStateUsing(fn (HeroSlide $record): string => $record->isDefault() ? 'Ya' : 'Tidak')
+                ->sortable(false),
             TextColumn::make('status')->label('Status')->badge()->color(fn ($s) => $s === 'published' ? 'success' : 'warning')->sortable(),
             ToggleColumn::make('is_active')->label('Aktif')->sortable(),
             TextColumn::make('sort_order')->label('Urutan')->sortable(),

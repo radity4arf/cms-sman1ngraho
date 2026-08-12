@@ -3,14 +3,16 @@
 /**
  * HeroSlidePolicy — Otorisasi granular untuk model HeroSlide (RT-15)
  *
- * Spesial: record is_default=true tidak bisa di-delete/draft/nonaktif.
- * Guard model (booted) + Policy (delete) = double layer perlindungan.
+ * Spesial: slide yang sedang default tidak bisa di-delete.
+ * Cek status default via HeroSlide::isDefault() (→ hero_slide_config).
  *
  * @author   DSE (Delia Tse)
  * @created  2026-08-10
+ * @updated  2026-08-12 — Restrukturisasi: isDefault() via config, bukan kolom is_default
  */
 
-// [THECHNOLOGY-CRE] : HeroSlidePolicy — otorisasi CRUD Hero Slide + guard is_default
+// [THECHNOLOGY-CRE] : HeroSlidePolicy — otorisasi CRUD Hero Slide + guard default
+// [THECHNOLOGY-MOD] : isDefault() via HeroSlideConfig, bukan boolean is_default
 
 namespace App\Policies;
 
@@ -40,8 +42,8 @@ class HeroSlidePolicy
     }
 
     /**
-     * [THECHNOLOGY-MOD] : Double guard — selain permission delete_hero_slides,
-     * record is_default=true tidak boleh dihapus (RT-15 edge case #4).
+     * Double guard: selain permission delete_hero_slides,
+     * slide yang sedang default tidak boleh dihapus.
      */
     public function delete(User $user, HeroSlide $heroSlide): bool
     {
@@ -49,7 +51,7 @@ class HeroSlidePolicy
             return false;
         }
 
-        if ($heroSlide->is_default) {
+        if ($heroSlide->isDefault()) {
             return false;
         }
 
