@@ -11,7 +11,7 @@
  * ke slide draft/nonaktif — FK cuma jamin ID exists, tidak jamin kelayakan publik.
  *
  * Fix: BEFORE UPDATE trigger di hero_slide_config — query hero_slides untuk
- * cek status='published' DAN is_active=1 pada slide target.
+ * cek status='published' DAN is_active=1 DAN deleted_at IS NULL pada slide target.
  *
  * Trigger ini adalah lapisan kedua (defense-in-depth), bukan pengganti
  * validasi service. promoteAsDefault() yang sah tetap lolos karena slide-nya
@@ -19,6 +19,7 @@
  *
  * @author   DSE (Delia Tse)
  * @created  2026-08-12 — CGX round 4 issue #3: validasi pointer config
+ * @updated  2026-08-12 — CGX round 6: tambah cek deleted_at IS NULL
  */
 
 // [THECHNOLOGY-CRE] : DB trigger — validasi kelayakan slide target di config
@@ -46,6 +47,7 @@ return new class extends Migration
                             WHERE id = NEW.default_hero_slide_id
                               AND status = \'published\'
                               AND is_active = 1
+                              AND deleted_at IS NULL
                         ) THEN
                             SIGNAL SQLSTATE \'45000\'
                                 SET MESSAGE_TEXT = \'Slide target harus published dan aktif untuk dijadikan default.\';
@@ -65,6 +67,7 @@ return new class extends Migration
                      WHERE id = NEW.default_hero_slide_id
                        AND status = \'published\'
                        AND is_active = 1
+                       AND deleted_at IS NULL
                  )
                 BEGIN
                     SELECT RAISE(ABORT, \'Slide target harus published dan aktif untuk dijadikan default.\');
