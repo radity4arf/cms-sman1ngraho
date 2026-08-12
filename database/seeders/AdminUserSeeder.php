@@ -1,21 +1,22 @@
 <?php
 
-// [THECHNOLOGY-MOD-DSE] : AdminUserSeeder — buat akun admin awal (superuser) dengan flag is_super_admin
+// [THECHNOLOGY-MOD] : AdminUserSeeder — buat akun admin awal (superuser) dengan flag is_super_admin
 // Password diambil dari env('ADMIN_DEFAULT_PASSWORD'). Jika kosong, generate random & log ke output.
 // Flag is_super_admin = true memberi akses penuh via Gate::before tanpa bergantung permission list.
-// Permission list tetap di-assign untuk backward compatibility (cek hasPermissionTo langsung di model).
+// [THECHNOLOGY-FIX] : HAPUS auto-assignment permission Fase 3 ke admin (CGX Fase 3 Minor #3).
+// Seeder hanya DAFTARKAN permission (via RoleAndPermissionSeeder), TIDAK assign otomatis.
+// Assignment permission tetap manual via UI sesuai spec asli.
 
 namespace Database\Seeders;
 
 use App\Models\User;
 use Illuminate\Database\Seeder;
-use Spatie\Permission\Models\Permission;
 
 class AdminUserSeeder extends Seeder
 {
     public function run(): void
     {
-        // [THECHNOLOGY-MOD-DSE] : firstOrCreate — idempoten, hanya buat admin kalau belum ada.
+        // firstOrCreate — idempoten, hanya buat admin kalau belum ada.
         // Password dari env('ADMIN_DEFAULT_PASSWORD'), fallback ke random string jika kosong.
         $password = env('ADMIN_DEFAULT_PASSWORD') ?: \Illuminate\Support\Str::random(16);
 
@@ -27,7 +28,7 @@ class AdminUserSeeder extends Seeder
             ]
         );
 
-        // [THECHNOLOGY-MOD-DSE] : log password ke output seeder jika bukan dari env (random-generated)
+        // log password ke output seeder jika bukan dari env (random-generated)
         // supaya developer tahu password yang harus dipakai untuk login pertama.
         if (!env('ADMIN_DEFAULT_PASSWORD')) {
             $this->command->warn('=================================================');
@@ -39,18 +40,10 @@ class AdminUserSeeder extends Seeder
             $this->command->warn('=================================================');
         }
 
-        // [THECHNOLOGY-CRE-DSE] : set flag eksplisit super-admin — ini yang dipakai Gate::before,
+        // set flag eksplisit super-admin — ini yang dipakai Gate::before,
         // tidak bergantung pada daftar permission yang bisa berubah di Fase 3+
         // Gunakan property assignment langsung (bukan update()) karena is_super_admin tidak ada di Fillable
         $admin->is_super_admin = true;
         $admin->save();
-
-        // [THECHNOLOGY-CRE-DSE] : tetap assign semua permission untuk backward compatibility
-        // (misal kalau ada pengecekan manual $admin->hasPermissionTo() di luar Gate)
-        $allPermissions = Permission::pluck('name')->toArray();
-
-        if (!empty($allPermissions)) {
-            $admin->syncPermissions($allPermissions);
-        }
     }
 }

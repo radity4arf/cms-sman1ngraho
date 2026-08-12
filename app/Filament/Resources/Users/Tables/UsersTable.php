@@ -56,6 +56,8 @@ class UsersTable
                     ->dateTime('d M Y H:i')
                     ->sortable(),
             ])
+            ->emptyStateHeading('Belum ada Pengguna')
+            ->emptyStateDescription('Klik tombol "Buat Pengguna" untuk menambahkan akun baru.')
             ->filters([
                 //
             ])

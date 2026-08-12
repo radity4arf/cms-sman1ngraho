@@ -16,10 +16,16 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // [THECHNOLOGY-CRE-DSE] : urutan penting — PermissionSeeder dulu, baru AdminUserSeeder
+        // [THECHNOLOGY-CRE] : urutan penting —
+        // 1. PermissionSeeder (harus ada sebelum AdminUserSeeder sync permissions)
+        // 2. AdminUserSeeder (assign permission ke admin)
+        // 3. DownloadCategorySeeder (kategori harus ada sebelum Download)
+        // 4. HeroSlideSeeder (fallback default slide)
         $this->call([
             PermissionSeeder::class,
             AdminUserSeeder::class,
+            DownloadCategorySeeder::class,
+            HeroSlideSeeder::class,
         ]);
     }
 }

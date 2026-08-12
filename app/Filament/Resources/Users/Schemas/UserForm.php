@@ -5,7 +5,7 @@
 namespace App\Filament\Resources\Users\Schemas;
 
 use Filament\Forms\Components\CheckboxList;
-use Filament\Forms\Components\Section;
+use Filament\Schemas\Components\Section;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Schema;
 use Illuminate\Validation\Rules\Password;
@@ -39,7 +39,8 @@ class UserForm
                             ->dehydrated(fn(?string $state): bool => filled($state))
                             ->revealable(),
                     ])
-                    ->columns(2),
+                    ->columns(2)
+                    ->columnSpanFull(),
 
                 // [THECHNOLOGY-CRE-DSE] : CheckboxList untuk assign permission granular per user (BUKAN role)
                 Section::make('Akses Fitur (Permission Granular)')
@@ -57,7 +58,8 @@ class UserForm
                             ->columns(2)
                             ->bulkToggleable()
                             ->searchable(),
-                    ]),
+                    ])
+                    ->columnSpanFull(),
             ]);
     }
 }
