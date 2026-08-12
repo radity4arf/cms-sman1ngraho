@@ -6,6 +6,7 @@
  * @author   DSE (Delia Tse)
  * @created  2026-08-10
  * @updated  2026-08-12 — Restrukturisasi total: rewrite dari nol
+ * @updated  2026-08-12 — CGX round 6: +3 test (soft-deleted target validity)
  */
 
 // [THECHNOLOGY-CRE] : HeroSlideGuardTest — restrukturisasi total
@@ -367,5 +368,60 @@ class HeroSlideGuardTest extends TestCase
         $this->expectException(\Illuminate\Database\QueryException::class);
 
         HeroSlideConfig::query()->where('id', 1)->update(['id' => 2]);
+    }
+
+    // ─── CGX ROUND 6: SOFT-DELETED TARGET ──────────────
+    // [THECHNOLOGY-CRE] : 3 test — celah deleted_at di target validity
+
+    public function test_promote_as_default_rejects_soft_deleted_slide(): void
+    {
+        $slide = HeroSlide::factory()->create([
+            'status'    => ContentStatus::Published->value,
+            'is_active' => true,
+        ]);
+
+        // Soft-delete slide (status & is_active tetap sama)
+        $slide->delete();
+        $this->assertSoftDeleted($slide);
+
+        // Harus ditolak: slide sudah di-trash
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('dihapus');
+        HeroSlideService::promoteAsDefault($slide);
+    }
+
+    public function test_query_builder_cannot_point_config_to_soft_deleted_slide(): void
+    {
+        $slide = HeroSlide::factory()->create([
+            'status'    => ContentStatus::Published->value,
+            'is_active' => true,
+        ]);
+
+        // Soft-delete via Query Builder (bypass Eloquent guard)
+        \Illuminate\Support\Facades\DB::table('hero_slides')
+            ->where('id', $slide->id)
+            ->update(['deleted_at' => now()]);
+
+        // Trigger DB harus tolak pointer ke slide yang sudah di-trash
+        $this->expectException(\Illuminate\Database\QueryException::class);
+
+        HeroSlideConfig::query()->where('id', 1)->update([
+            'default_hero_slide_id' => $slide->id,
+        ]);
+    }
+
+    public function test_promote_as_default_still_works_for_normal_slide(): void
+    {
+        $slide = HeroSlide::factory()->create([
+            'status'    => ContentStatus::Published->value,
+            'is_active' => true,
+        ]);
+
+        // Regresi: slide normal (tidak di-trash) harus tetap bisa dipromosikan
+        $this->assertFalse($slide->trashed());
+
+        HeroSlideService::promoteAsDefault($slide);
+        $this->assertEquals($slide->id, HeroSlideConfig::defaultSlideId());
+        $this->assertTrue($slide->fresh()->isDefault());
     }
 }
