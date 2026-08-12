@@ -15,11 +15,13 @@
  * @author   DSE (Delia Tse)
  * @created  2026-08-08
  * @updated  2026-08-11 — strict CGX review fix: service-only swap, reject draft/inactive default, SQLite index
+ * @updated  2026-08-12 — CLX fix: private $swappingDefault + token-guard beginSwap/endSwap + try/finally
  */
 
 // [THECHNOLOGY-CRE] : HeroSlide model — Hero Slider
 // [THECHNOLOGY-FIX] : Race condition is_default — DB transaction + row lock + reject unset tanpa kandidat
 // [THECHNOLOGY-FIX] : Strict CGX guard — service-only swap, reject draft+default, reject inactive+default
+// [THECHNOLOGY-MOD] : Token-guard beginSwap/endSwap + private flag + try/finally — CLX review fix
 
 namespace App\Models;
 
@@ -45,27 +47,49 @@ class HeroSlide extends Model implements HasMedia
     use InteractsWithMedia;
 
     /**
+     * Token internal — mencegah pemanggilan beginSwap()/endSwap() dari
+     * luar HeroSlideService. Token ini public agar bisa dibaca oleh
+     * HeroSlideService, tapi hanya digunakan sebagai validasi.
+     */
+    public const SWAP_TOKEN = 'hero_slide_svc_internal_v1_8a7f3c';
+
+    /**
      * Flag internal — menandakan bahwa operasi unset is_default sedang dalam
      * proses swap (dipicu oleh HeroSlideService::promoteAsDefault() atau
      * saving event internal), sehingga pengecekan updating guard dilewati.
      *
      * HANYA HeroSlideService dan internal saving event yang boleh menyetel flag ini.
+     * Flag dijaga dengan token validasi — beginSwap()/endSwap() tanpa token valid akan throw.
      */
-    protected static bool $swappingDefault = false;
+    private static bool $swappingDefault = false;
 
     /**
-     * Akses publik untuk HeroSlideService — set flag swap ke true.
+     * @internal HANYA untuk HeroSlideService dan saving event internal.
+     *            Set flag swap ke true — wajib sertakan SWAP_TOKEN.
+     * @throws \RuntimeException jika token tidak valid.
      */
-    public static function beginSwap(): void
+    public static function beginSwap(string $token): void
     {
+        if ($token !== self::SWAP_TOKEN) {
+            throw new \RuntimeException(
+                'beginSwap() hanya dapat dipanggil oleh HeroSlideService. Gunakan HeroSlideService::promoteAsDefault().'
+            );
+        }
         static::$swappingDefault = true;
     }
 
     /**
-     * Akses publik untuk HeroSlideService — set flag swap ke false.
+     * @internal HANYA untuk HeroSlideService dan saving event internal.
+     *            Reset flag swap ke false — wajib sertakan SWAP_TOKEN.
+     * @throws \RuntimeException jika token tidak valid.
      */
-    public static function endSwap(): void
+    public static function endSwap(string $token): void
     {
+        if ($token !== self::SWAP_TOKEN) {
+            throw new \RuntimeException(
+                'endSwap() hanya dapat dipanggil oleh HeroSlideService. Gunakan HeroSlideService::promoteAsDefault().'
+            );
+        }
         static::$swappingDefault = false;
     }
 
@@ -188,14 +212,16 @@ class HeroSlide extends Model implements HasMedia
                     ->get();
 
                 if ($existingDefaults->isNotEmpty()) {
+                    // [THECHNOLOGY-FIX] : try/finally — flag selalu di-reset meskipun transaksi gagal
                     static::$swappingDefault = true;
-
-                    foreach ($existingDefaults as $default) {
-                        $default->is_default = false;
-                        $default->save();
+                    try {
+                        foreach ($existingDefaults as $default) {
+                            $default->is_default = false;
+                            $default->save();
+                        }
+                    } finally {
+                        static::$swappingDefault = false;
                     }
-
-                    static::$swappingDefault = false;
                 }
             });
         });

@@ -14,10 +14,12 @@
  * @author   DSE (Delia Tse)
  * @created  2026-08-10
  * @updated  2026-08-11 — strict CGX review fix: service-only swap, reject draft/inactive default
+ * @updated  2026-08-12 — CLX fix: token-guard tests, flag-reset-after-swap test
  */
 
 // [THECHNOLOGY-CRE] : HeroSlideGuardTest
 // [THECHNOLOGY-FIX] : Strict CGX — service-only swap, draft+default ditolak, unset langsung ditolak
+// [THECHNOLOGY-MOD] : Tes token-guard beginSwap/endSwap + flag reset — CLX review fix
 
 namespace Tests\Feature;
 
@@ -325,5 +327,119 @@ class HeroSlideGuardTest extends TestCase
 
         $slide->is_active = false;
         $slide->save();
+    }
+
+    // ──────────────────────────────────────────────────
+    // TOKEN GUARD — beginSwap/endSwap
+    // ──────────────────────────────────────────────────
+
+    /**
+     * [THECHNOLOGY-MOD] : beginSwap() tanpa token valid → throw.
+     * Cegah panggilan dari Tinker/job untuk bypass guard.
+     */
+    public function test_begin_swap_rejects_invalid_token(): void
+    {
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('beginSwap() hanya dapat dipanggil oleh HeroSlideService');
+
+        HeroSlide::beginSwap('');
+    }
+
+    /**
+     * [THECHNOLOGY-MOD] : beginSwap() dengan token salah → throw.
+     */
+    public function test_begin_swap_rejects_wrong_token(): void
+    {
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('beginSwap() hanya dapat dipanggil oleh HeroSlideService');
+
+        HeroSlide::beginSwap('some-random-string');
+    }
+
+    /**
+     * [THECHNOLOGY-MOD] : beginSwap() dengan token benar → diterima.
+     */
+    public function test_begin_swap_accepts_valid_token(): void
+    {
+        HeroSlide::beginSwap(HeroSlide::SWAP_TOKEN);
+
+        // Verifikasi flag terpasang — unset langsung tidak boleh throw
+        $slide = HeroSlide::factory()->default()->create([
+            'status'    => ContentStatus::Published->value,
+            'is_active' => true,
+        ]);
+
+        // Ini seharusnya tidak throw karena flag swap=true
+        $slide->is_default = false;
+        $slide->save();
+
+        // Cleanup
+        HeroSlide::endSwap(HeroSlide::SWAP_TOKEN);
+
+        $this->assertFalse($slide->fresh()->is_default);
+    }
+
+    /**
+     * [THECHNOLOGY-MOD] : endSwap() tanpa token valid → throw.
+     */
+    public function test_end_swap_rejects_invalid_token(): void
+    {
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('endSwap() hanya dapat dipanggil oleh HeroSlideService');
+
+        HeroSlide::endSwap('');
+    }
+
+    /**
+     * [THECHNOLOGY-MOD] : endSwap() dengan token benar → diterima.
+     */
+    public function test_end_swap_accepts_valid_token(): void
+    {
+        // Set flag dulu via token valid
+        HeroSlide::beginSwap(HeroSlide::SWAP_TOKEN);
+
+        // Reset flag via token valid — tidak boleh throw
+        HeroSlide::endSwap(HeroSlide::SWAP_TOKEN);
+
+        // Verifikasi flag sudah di-reset: unset langsung tanpa service harus throw lagi
+        $slide = HeroSlide::factory()->default()->create([
+            'status'    => ContentStatus::Published->value,
+            'is_active' => true,
+        ]);
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('HeroSlideService::promoteAsDefault');
+
+        $slide->is_default = false;
+        $slide->save();
+    }
+
+    /**
+     * [THECHNOLOGY-MOD] : Pastikan flag swap di-reset setelah promoteAsDefault.
+     * Setelah service selesai, unset langsung harus ditolak lagi.
+     */
+    public function test_flag_reset_after_promote_as_default(): void
+    {
+        $slideA = HeroSlide::factory()->default()->create([
+            'title'     => 'Slide A',
+            'status'    => ContentStatus::Published->value,
+            'is_active' => true,
+        ]);
+        $slideB = HeroSlide::factory()->create([
+            'title'     => 'Slide B',
+            'status'    => ContentStatus::Published->value,
+            'is_active' => true,
+            'is_default'=> false,
+        ]);
+
+        // Promosikan via service — flag harus di-reset setelahnya
+        HeroSlideService::promoteAsDefault($slideB);
+
+        // Sekarang slide B adalah default. Coba unset langsung → harus ditolak
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('HeroSlideService::promoteAsDefault');
+
+        $slideB->is_default = false;
+        $slideB->save();
     }
 }

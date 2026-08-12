@@ -4,12 +4,16 @@
  * HeroSlideResource — Filament CRUD untuk Hero Slider (RT-15)
  *
  * is_default=true di-guard dari delete/draft/nonaktif via policy.
+ * is_default TIDAK bisa dimutasi langsung dari form — gunakan
+ * tombol "Jadikan Default" di halaman edit (via HeroSlideService).
  *
  * @author   DSE (Delia Tse)
  * @created  2026-08-08
+ * @updated  2026-08-12 — CLX fix: hapus Toggle is_default dari form, ganti Placeholder
  */
 
 // [THECHNOLOGY-CRE] : HeroSlideResource
+// [THECHNOLOGY-MOD] : Hapus Toggle is_default — ganti Placeholder readonly (CLX fix)
 
 namespace App\Filament\Resources\HeroSlides;
 
@@ -22,7 +26,6 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\DateTimePicker;
-use Filament\Forms\Components\Toggle;
 use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Filament\Tables\Table;
 use Filament\Tables\Columns\TextColumn;
@@ -57,8 +60,14 @@ class HeroSlideResource extends Resource
                 Textarea::make('caption')->label('Caption')->maxLength(300)->rows(2),
                 TextInput::make('cta_label')->label('Label Tombol')->maxLength(50)->nullable(),
                 TextInput::make('cta_url')->label('URL Tombol')->maxLength(500)->nullable()->url(),
-                Toggle::make('is_default')->label('Slide Default')
-                    ->helperText('Slide fallback — tidak bisa dihapus/dinonaktifkan jika true. Hanya boleh 1.'),
+                \Filament\Forms\Components\Placeholder::make('is_default_status')
+                    ->label('Status Default')
+                    ->content(fn (?\App\Models\HeroSlide $record): string =>
+                        $record?->is_default
+                            ? 'Ya — slide ini adalah default (tidak dapat diubah langsung)'
+                            : 'Bukan — gunakan tombol "Jadikan Default" di halaman edit untuk mempromosikan'
+                    )
+                    ->columnSpanFull(),
                 TextInput::make('sort_order')->label('Urutan')->numeric()->default(0),
             ])->columns(2)->columnSpanFull(),
             Section::make('Media')->schema([

@@ -10,9 +10,11 @@
  *
  * @author   DSE (Delia Tse)
  * @created  2026-08-11
+ * @updated  2026-08-12 — CLX fix: token-guard beginSwap/endSwap + try/finally
  */
 
 // [THECHNOLOGY-CRE] : HeroSlideService — promoteAsDefault(), satu-satunya jalur resmi swap default
+// [THECHNOLOGY-MOD] : Token-guard beginSwap/endSwap + try/finally — flag selalu di-reset
 
 namespace App\Services;
 
@@ -56,28 +58,28 @@ class HeroSlideService
                 ->lockForUpdate()
                 ->get();
 
-            // Set internal flag supaya model guard melewati pengecekan
-            HeroSlide::beginSwap();
+            // [THECHNOLOGY-MOD] : Set internal flag via token-guarded beginSwap().
+            // try/finally memastikan flag selalu di-reset meskipun exception terjadi.
+            HeroSlide::beginSwap(HeroSlide::SWAP_TOKEN);
+            try {
+                // Unset semua default existing
+                foreach ($existingDefaults as $default) {
+                    $default->is_default = false;
+                    $default->save();
+                }
 
-            // Unset semua default existing
-            foreach ($existingDefaults as $default) {
-                $default->is_default = false;
-                $default->save();
+                // Set slide baru sebagai default
+                if (! $slide->exists) {
+                    $slide->is_default = true;
+                    $slide->save();
+                } elseif (! $slide->is_default) {
+                    $slide->is_default = true;
+                    $slide->save();
+                }
+                // Kalau slide->is_default sudah true dan sudah exists → sudah default, tidak perlu apa-apa
+            } finally {
+                HeroSlide::endSwap(HeroSlide::SWAP_TOKEN);
             }
-
-            // Set slide baru sebagai default
-            // Kalau slide sudah ada (exists), update is_default=true
-            // Kalau slide baru (belum exists), set property
-            if (! $slide->exists) {
-                $slide->is_default = true;
-                $slide->save();
-            } elseif (! $slide->is_default) {
-                $slide->is_default = true;
-                $slide->save();
-            }
-            // Kalau slide->is_default sudah true dan sudah exists → sudah default, tidak perlu apa-apa
-
-            HeroSlide::endSwap();
         });
     }
 }
