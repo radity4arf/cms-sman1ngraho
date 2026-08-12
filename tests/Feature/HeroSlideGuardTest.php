@@ -155,16 +155,83 @@ class HeroSlideGuardTest extends TestCase
         $this->assertEquals(1, HeroSlideConfig::count());
     }
 
-    public function test_config_default_is_null_when_slide_deleted(): void
+    public function test_config_singleton_blocks_second_insert(): void
+    {
+        $this->assertEquals(1, HeroSlideConfig::count());
+
+        // Coba insert row kedua via Query Builder → harus ditolak
+        $this->expectException(\Illuminate\Database\QueryException::class);
+
+        \Illuminate\Support\Facades\DB::table('hero_slide_config')->insert([
+            'id'                    => 2,
+            'default_hero_slide_id' => null,
+            'created_at'            => now(),
+            'updated_at'            => now(),
+        ]);
+    }
+
+    public function test_db_level_delete_of_default_slide_is_blocked(): void
     {
         $slide = HeroSlide::factory()->create();
         HeroSlideService::promoteAsDefault($slide);
-        $this->assertEquals($slide->id, HeroSlideConfig::defaultSlideId());
 
-        // Delete via DB facade — bypass model guard untuk test FK ON DELETE SET NULL
+        // Delete via DB facade (bypass Eloquent) → harus ditolak FK RESTRICT / trigger
+        $this->expectException(\Illuminate\Database\QueryException::class);
+
         \Illuminate\Support\Facades\DB::table('hero_slides')->where('id', $slide->id)->delete();
+    }
 
-        $this->assertNull(HeroSlideConfig::first()->refresh()->default_hero_slide_id);
+    public function test_can_delete_slide_after_promoting_another_as_default(): void
+    {
+        $slideA = HeroSlide::factory()->create(['status' => ContentStatus::Published->value, 'is_active' => true]);
+        $slideB = HeroSlide::factory()->create(['status' => ContentStatus::Published->value, 'is_active' => true]);
+
+        HeroSlideService::promoteAsDefault($slideA);
+        HeroSlideService::promoteAsDefault($slideB); // B now default
+
+        // A is no longer default → should be deletable
+        $slideA->delete();
+        $this->assertSoftDeleted($slideA);
+    }
+
+    // ─── QUERY BUILDER BYPASS GUARDS ─────────────────
+
+    public function test_query_builder_cannot_draft_default_slide(): void
+    {
+        $slide = HeroSlide::factory()->create(['status' => ContentStatus::Published->value, 'is_active' => true]);
+        HeroSlideService::promoteAsDefault($slide);
+
+        $this->expectException(\Illuminate\Database\QueryException::class);
+
+        \Illuminate\Support\Facades\DB::table('hero_slides')
+            ->where('id', $slide->id)
+            ->update(['status' => 'draft']);
+    }
+
+    public function test_query_builder_cannot_deactivate_default_slide(): void
+    {
+        $slide = HeroSlide::factory()->create(['status' => ContentStatus::Published->value, 'is_active' => true]);
+        HeroSlideService::promoteAsDefault($slide);
+
+        $this->expectException(\Illuminate\Database\QueryException::class);
+
+        \Illuminate\Support\Facades\DB::table('hero_slides')
+            ->where('id', $slide->id)
+            ->update(['is_active' => false]);
+    }
+
+    public function test_config_cannot_be_nulled_after_first_init(): void
+    {
+        // Init: set default
+        $slide = HeroSlide::factory()->create();
+        HeroSlideService::promoteAsDefault($slide);
+        $this->assertNotNull(HeroSlideConfig::defaultSlideId());
+
+        // Coba null-kan langsung via model (bypass service)
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('mengosongkan');
+
+        HeroSlideConfig::current()->update(['default_hero_slide_id' => null]);
     }
 
     // ─── RACE CONDITION ──────────────────────────────
