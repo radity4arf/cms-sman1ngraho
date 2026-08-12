@@ -1,8 +1,8 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "default_agent": "orchestrator",
   "instructions": [
     "docs/TDS-DSE.md",
-    "docs/TDS-CLX.md"
+    "docs/00-Workflow-Team-CMS-Project.md",
+    "docs/RDA-Universal-Standard-v1.1.md"
   ]
 }
