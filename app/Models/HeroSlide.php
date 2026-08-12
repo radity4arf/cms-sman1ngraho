@@ -16,12 +16,14 @@
  * @created  2026-08-08
  * @updated  2026-08-11 — strict CGX review fix: service-only swap, reject draft/inactive default, SQLite index
  * @updated  2026-08-12 — CLX fix: private $swappingDefault + token-guard beginSwap/endSwap + try/finally
+ * @updated  2026-08-12 — CGX fix lanjutan: DB session-variable/flag-table untuk trigger unset guard
  */
 
 // [THECHNOLOGY-CRE] : HeroSlide model — Hero Slider
 // [THECHNOLOGY-FIX] : Race condition is_default — DB transaction + row lock + reject unset tanpa kandidat
 // [THECHNOLOGY-FIX] : Strict CGX guard — service-only swap, reject draft+default, reject inactive+default
 // [THECHNOLOGY-MOD] : Token-guard beginSwap/endSwap + private flag + try/finally — CLX review fix
+// [THECHNOLOGY-MOD] : DB-level flag (session var/flag table) + trigger unset guard — CGX QB bypass fix
 
 namespace App\Models;
 
@@ -65,7 +67,7 @@ class HeroSlide extends Model implements HasMedia
 
     /**
      * @internal HANYA untuk HeroSlideService dan saving event internal.
-     *            Set flag swap ke true — wajib sertakan SWAP_TOKEN.
+     *            Set flag swap ke true (PHP + DB level) — wajib sertakan SWAP_TOKEN.
      * @throws \RuntimeException jika token tidak valid.
      */
     public static function beginSwap(string $token): void
@@ -76,11 +78,21 @@ class HeroSlide extends Model implements HasMedia
             );
         }
         static::$swappingDefault = true;
+
+        // [THECHNOLOGY-MOD] : Set DB-level flag supaya trigger tahu ini swap sah.
+        // MySQL: session variable @hero_swapping_default.
+        // SQLite: temp table _hero_swap_flag.
+        $driver = DB::connection()->getDriverName();
+        if ($driver === 'mysql') {
+            DB::statement('SET @hero_swapping_default = 1');
+        } elseif ($driver === 'sqlite') {
+            DB::statement('INSERT INTO hero_slide_swap_flags (flag) VALUES (1)');
+        }
     }
 
     /**
      * @internal HANYA untuk HeroSlideService dan saving event internal.
-     *            Reset flag swap ke false — wajib sertakan SWAP_TOKEN.
+     *            Reset flag swap ke false (PHP + DB level) — wajib sertakan SWAP_TOKEN.
      * @throws \RuntimeException jika token tidak valid.
      */
     public static function endSwap(string $token): void
@@ -91,6 +103,14 @@ class HeroSlide extends Model implements HasMedia
             );
         }
         static::$swappingDefault = false;
+
+        // [THECHNOLOGY-MOD] : Reset DB-level flag.
+        $driver = DB::connection()->getDriverName();
+        if ($driver === 'mysql') {
+            DB::statement('SET @hero_swapping_default = 0');
+        } elseif ($driver === 'sqlite') {
+            DB::statement('DELETE FROM hero_slide_swap_flags');
+        }
     }
 
     protected function casts(): array
@@ -212,15 +232,17 @@ class HeroSlide extends Model implements HasMedia
                     ->get();
 
                 if ($existingDefaults->isNotEmpty()) {
-                    // [THECHNOLOGY-FIX] : try/finally — flag selalu di-reset meskipun transaksi gagal
-                    static::$swappingDefault = true;
+                    // [THECHNOLOGY-MOD] : Gunakan beginSwap()/endSwap() dengan token —
+                    // ini juga menyetel DB-level flag (session var / temp table)
+                    // supaya trigger DB tidak memblokir unset dalam transaksi swap sah.
+                    static::beginSwap(self::SWAP_TOKEN);
                     try {
                         foreach ($existingDefaults as $default) {
                             $default->is_default = false;
                             $default->save();
                         }
                     } finally {
-                        static::$swappingDefault = false;
+                        static::endSwap(self::SWAP_TOKEN);
                     }
                 }
             });

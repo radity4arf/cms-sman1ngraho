@@ -15,11 +15,13 @@
  * @created  2026-08-10
  * @updated  2026-08-11 — strict CGX review fix: service-only swap, reject draft/inactive default
  * @updated  2026-08-12 — CLX fix: token-guard tests, flag-reset-after-swap test
+ * @updated  2026-08-12 — CGX fix lanjutan: Query Builder bypass tests + regresi swap sah
  */
 
 // [THECHNOLOGY-CRE] : HeroSlideGuardTest
 // [THECHNOLOGY-FIX] : Strict CGX — service-only swap, draft+default ditolak, unset langsung ditolak
 // [THECHNOLOGY-MOD] : Tes token-guard beginSwap/endSwap + flag reset — CLX review fix
+// [THECHNOLOGY-MOD] : Tes Query Builder bypass + regresi swap sah — CGX fix lanjutan
 
 namespace Tests\Feature;
 
@@ -441,5 +443,121 @@ class HeroSlideGuardTest extends TestCase
 
         $slideB->is_default = false;
         $slideB->save();
+    }
+
+    // ──────────────────────────────────────────────────
+    // QUERY BUILDER BYPASS — DB trigger guard
+    // ──────────────────────────────────────────────────
+
+    /**
+     * [THECHNOLOGY-MOD] : Query Builder update() bypass Eloquent events —
+     * unset is_default langsung pada slide default TANPA pengganti → DITOLAK
+     * oleh DB trigger.
+     *
+     * Ini adalah skenario persis yang jadi concern CGX: HeroSlide::query()
+     * ->where('id', X)->update(['is_default' => false]) tidak memicu
+     * model event, jadi model-level guard tidak berlaku.
+     */
+    public function test_query_builder_unset_default_without_replacement_is_rejected(): void
+    {
+        // Arrange: 1 slide default published+aktif
+        $default = HeroSlide::factory()->default()->create([
+            'title'     => 'Default',
+            'status'    => ContentStatus::Published->value,
+            'is_active' => true,
+        ]);
+
+        // Act & Assert: Query Builder unset langsung → DB trigger harus tolak
+        $this->expectException(\Illuminate\Database\QueryException::class);
+
+        HeroSlide::query()
+            ->where('id', $default->id)
+            ->update(['is_default' => false]);
+    }
+
+    /**
+     * [THECHNOLOGY-MOD] : Query Builder unset is_default dengan kandidat
+     * pengganti TETAP ditolak — karena kandidat belum dipromosikan via
+     * service (swap flag tidak disetel).
+     *
+     * Query Builder tidak menyetel session variable / flag table,
+     * jadi trigger tetap memblokir.
+     */
+    public function test_query_builder_unset_default_even_with_candidate_is_rejected(): void
+    {
+        // Arrange: default + kandidat published+aktif
+        $default = HeroSlide::factory()->default()->create([
+            'title'     => 'Default',
+            'status'    => ContentStatus::Published->value,
+            'is_active' => true,
+        ]);
+        HeroSlide::factory()->create([
+            'title'     => 'Kandidat',
+            'status'    => ContentStatus::Published->value,
+            'is_active' => true,
+            'is_default'=> false,
+        ]);
+
+        // Act & Assert: Query Builder unset → tetap ditolak (flag swap tidak disetel)
+        $this->expectException(\Illuminate\Database\QueryException::class);
+
+        HeroSlide::query()
+            ->where('id', $default->id)
+            ->update(['is_default' => false]);
+    }
+
+    /**
+     * [THECHNOLOGY-MOD] : Regresi — swap sah lewat promoteAsDefault() tetap
+     * berhasil meskipun DB trigger unset guard sudah aktif.
+     *
+     * Service menyetel session variable/flag table SEBELUM unset,
+     * jadi trigger mengizinkan unset dalam konteks swap.
+     */
+    public function test_legitimate_swap_via_service_still_works_with_trigger_active(): void
+    {
+        $slideA = HeroSlide::factory()->default()->create([
+            'title'     => 'Slide A',
+            'status'    => ContentStatus::Published->value,
+            'is_active' => true,
+        ]);
+        $slideB = HeroSlide::factory()->create([
+            'title'     => 'Slide B',
+            'status'    => ContentStatus::Published->value,
+            'is_active' => true,
+            'is_default'=> false,
+        ]);
+
+        // Act: swap via service — harus berhasil (tidak false-positive block)
+        HeroSlideService::promoteAsDefault($slideB);
+
+        // Assert
+        $this->assertFalse($slideA->fresh()->is_default, 'Slide A harus di-unset');
+        $this->assertTrue($slideB->fresh()->is_default, 'Slide B harus jadi default');
+        $this->assertEquals(1, HeroSlide::where('is_default', true)->count());
+    }
+
+    /**
+     * [THECHNOLOGY-MOD] : Regresi — factory create default tetap berhasil.
+     * saving() event internal menyetel swap flag → trigger mengizinkan unset.
+     */
+    public function test_factory_create_default_still_works_with_trigger_active(): void
+    {
+        $first = HeroSlide::factory()->default()->create([
+            'title'     => 'First Default',
+            'status'    => ContentStatus::Published->value,
+            'is_active' => true,
+        ]);
+        $this->assertTrue($first->fresh()->is_default);
+
+        // Create second default via factory — saving() event swap harus berhasil
+        $second = HeroSlide::factory()->default()->create([
+            'title'     => 'Second Default',
+            'status'    => ContentStatus::Published->value,
+            'is_active' => true,
+        ]);
+
+        $this->assertFalse($first->fresh()->is_default, 'Slide pertama harus di-unset');
+        $this->assertTrue($second->fresh()->is_default, 'Slide kedua harus jadi default');
+        $this->assertEquals(1, HeroSlide::where('is_default', true)->count());
     }
 }
