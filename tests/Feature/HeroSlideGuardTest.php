@@ -266,4 +266,48 @@ class HeroSlideGuardTest extends TestCase
         $this->assertEquals('New', $slide->fresh()->title);
         $this->assertTrue($slide->fresh()->isDefault());
     }
+
+    // ─── CONFIG TARGET VALIDITY (Issue #3) ────────────
+
+    public function test_query_builder_cannot_point_config_to_draft_slide(): void
+    {
+        $draftSlide = HeroSlide::factory()->draft()->create([
+            'status'    => ContentStatus::Draft->value,
+            'is_active' => true,
+        ]);
+
+        $this->expectException(\Illuminate\Database\QueryException::class);
+
+        HeroSlideConfig::query()->where('id', 1)->update([
+            'default_hero_slide_id' => $draftSlide->id,
+        ]);
+    }
+
+    public function test_query_builder_cannot_point_config_to_inactive_slide(): void
+    {
+        $inactiveSlide = HeroSlide::factory()->inactive()->create([
+            'status'    => ContentStatus::Published->value,
+            'is_active' => false,
+        ]);
+
+        $this->expectException(\Illuminate\Database\QueryException::class);
+
+        HeroSlideConfig::query()->where('id', 1)->update([
+            'default_hero_slide_id' => $inactiveSlide->id,
+        ]);
+    }
+
+    public function test_promote_as_default_still_works_with_target_validity_trigger(): void
+    {
+        $slide = HeroSlide::factory()->create([
+            'status'    => ContentStatus::Published->value,
+            'is_active' => true,
+        ]);
+
+        // Harus berhasil — slide published+aktif lolos trigger
+        HeroSlideService::promoteAsDefault($slide);
+
+        $this->assertEquals($slide->id, HeroSlideConfig::defaultSlideId());
+        $this->assertTrue($slide->isDefault());
+    }
 }
