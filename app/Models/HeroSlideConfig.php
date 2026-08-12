@@ -53,14 +53,15 @@ class HeroSlideConfig extends Model
 
     /**
      * Ambil singleton config row (id=1).
-     * firstOrCreate(['id' => 1]) — idempoten, selalu tepat 1 row.
+     *
+     * findOrFail(1) — BUKAN firstOrCreate. Migration sudah menjamin row ini
+     * selalu ada sejak awal + trigger mencegah delete. Kalau findOrFail(1)
+     * melempar exception, itu tandanya invariant database RUSAK — sistem
+     * harus fail LOUD, bukan diam-diam bikin row baru yang menyembunyikan masalah.
      */
     public static function current(): self
     {
-        return static::firstOrCreate(
-            ['id' => 1],
-            ['default_hero_slide_id' => null]
-        );
+        return static::findOrFail(1);
     }
 
     /**

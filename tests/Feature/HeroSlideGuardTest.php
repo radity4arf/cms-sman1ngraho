@@ -310,4 +310,62 @@ class HeroSlideGuardTest extends TestCase
         $this->assertEquals($slide->id, HeroSlideConfig::defaultSlideId());
         $this->assertTrue($slide->isDefault());
     }
+
+    // ─── ISSUE #1: Config row DELETE + findOrFail ──────
+
+    public function test_cannot_delete_config_row(): void
+    {
+        $this->expectException(\Illuminate\Database\QueryException::class);
+
+        HeroSlideConfig::query()->where('id', 1)->delete();
+    }
+
+    public function test_current_find_or_fail_works_when_row_exists(): void
+    {
+        $config = HeroSlideConfig::current();
+        $this->assertNotNull($config);
+        $this->assertEquals(1, $config->id);
+    }
+
+    // ─── ISSUE #2: Soft-delete default slide ───────────
+
+    public function test_query_builder_cannot_soft_delete_default_slide(): void
+    {
+        $slide = HeroSlide::factory()->create([
+            'status'    => ContentStatus::Published->value,
+            'is_active' => true,
+        ]);
+        HeroSlideService::promoteAsDefault($slide);
+
+        $this->expectException(\Illuminate\Database\QueryException::class);
+
+        \Illuminate\Support\Facades\DB::table('hero_slides')
+            ->where('id', $slide->id)
+            ->update(['deleted_at' => now()]);
+    }
+
+    // ─── ISSUE #3: Null-kan pointer via Query Builder ──
+
+    public function test_query_builder_cannot_null_config_pointer_after_init(): void
+    {
+        $slide = HeroSlide::factory()->create();
+        HeroSlideService::promoteAsDefault($slide);
+        $this->assertNotNull(HeroSlideConfig::defaultSlideId());
+
+        // Query Builder bypass model guard → trigger DB harus tolak
+        $this->expectException(\Illuminate\Database\QueryException::class);
+
+        HeroSlideConfig::query()->where('id', 1)->update([
+            'default_hero_slide_id' => null,
+        ]);
+    }
+
+    // ─── AUDIT: UPDATE id pada config row ──────────────
+
+    public function test_cannot_update_config_id(): void
+    {
+        $this->expectException(\Illuminate\Database\QueryException::class);
+
+        HeroSlideConfig::query()->where('id', 1)->update(['id' => 2]);
+    }
 }
