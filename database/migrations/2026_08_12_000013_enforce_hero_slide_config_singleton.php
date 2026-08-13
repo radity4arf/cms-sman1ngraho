@@ -158,7 +158,19 @@ return new class extends Migration
                     ->nullOnDelete();
             });
 
-            DB::statement('ALTER TABLE hero_slide_config DROP CONSTRAINT IF EXISTS hero_slide_config_singleton');
+            // [THECHNOLOGY-FIX] : MySQL tidak support "DROP CONSTRAINT IF EXISTS".
+            // MySQL 8.0.16+ memakai DROP CHECK, dan harus cek keberadaan dulu
+            // via information_schema.check_constraints.
+            $checkExists = DB::select("
+                SELECT COUNT(*) AS cnt FROM information_schema.check_constraints
+                WHERE constraint_schema = DATABASE()
+                AND table_name = 'hero_slide_config'
+                AND constraint_name = 'hero_slide_config_singleton'
+            ");
+
+            if ($checkExists[0]->cnt > 0) {
+                DB::statement('ALTER TABLE hero_slide_config DROP CHECK hero_slide_config_singleton');
+            }
         } elseif ($driver === 'sqlite') {
             DB::statement('DROP TRIGGER IF EXISTS hero_slide_config_singleton_guard');
             DB::statement('DROP TRIGGER IF EXISTS hero_slides_guard_default_delete_cfg');

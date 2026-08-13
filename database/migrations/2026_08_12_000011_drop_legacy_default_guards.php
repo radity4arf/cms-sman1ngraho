@@ -38,8 +38,18 @@ return new class extends Migration
             DB::statement('DROP TRIGGER IF EXISTS hero_slides_guard_default_delete');
             DB::statement('DROP TRIGGER IF EXISTS hero_slides_guard_default_unset');
 
-            // Drop partial unique index
-            DB::statement('DROP INDEX IF EXISTS hero_slides_is_default_true_unique ON hero_slides');
+            // [THECHNOLOGY-FIX] : MySQL tidak support "DROP INDEX IF EXISTS" (beda SQLite).
+            // Cek keberadaan index dulu via information_schema.statistics, baru drop.
+            $indexExists = DB::select("
+                SELECT COUNT(*) AS cnt FROM information_schema.statistics
+                WHERE table_schema = DATABASE()
+                AND table_name = 'hero_slides'
+                AND index_name = 'hero_slides_is_default_true_unique'
+            ");
+
+            if ($indexExists[0]->cnt > 0) {
+                DB::statement('DROP INDEX hero_slides_is_default_true_unique ON hero_slides');
+            }
         } elseif ($driver === 'sqlite') {
             DB::statement('DROP TRIGGER IF EXISTS hero_slides_guard_default_deactivate');
             DB::statement('DROP TRIGGER IF EXISTS hero_slides_guard_default_draft');
