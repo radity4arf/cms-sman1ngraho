@@ -19,9 +19,13 @@
  *
  * @author   DSE (Delia Tse)
  * @created  2026-08-12 — Restrukturisasi arsitektur: single source of truth
+ * @updated  2026-08-13 — FIX: id non-auto-increment (MySQL 8.0.16+ larang CHECK ke kolom AUTO_INCREMENT)
  */
 
 // [THECHNOLOGY-CRE] : hero_slide_config table — ganti boolean is_default
+// [THECHNOLOGY-FIX] : id primary key TANPA auto-increment — singleton id=1,
+//                     selaras $incrementing=false di model. MySQL 8.0.16+
+//                     melarang CHECK constraint merujuk kolom AUTO_INCREMENT.
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
@@ -34,7 +38,13 @@ return new class extends Migration
     {
         // 1. Buat tabel konfigurasi
         Schema::create('hero_slide_config', function (Blueprint $table) {
-            $table->id();
+            // [THECHNOLOGY-FIX] : TIDAK pakai $table->id() (auto-increment).
+            // Tabel ini singleton: selalu tepat 1 row dengan id=1.
+            // MySQL 8.0.16+ melarang CHECK constraint merujuk kolom AUTO_INCREMENT,
+            // dan $table->id() SELALU membuat AUTO_INCREMENT di level database —
+            // terlepas dari $incrementing=false di model (level Eloquent).
+            // unsignedBigInteger + primary() = primary key tanpa auto-increment.
+            $table->unsignedBigInteger('id')->primary();
             $table->foreignId('default_hero_slide_id')
                 ->nullable()
                 ->constrained('hero_slides')
@@ -47,10 +57,13 @@ return new class extends Migration
             ->where('is_default', true)
             ->first();
 
+        // [THECHNOLOGY-FIX] : id sekarang non-auto-increment → wajib diisi eksplisit.
+        // Singleton: tepat 1 row, id selalu 1.
         DB::table('hero_slide_config')->insert([
+            'id'                    => 1,
             'default_hero_slide_id' => $defaultSlide?->id,
-            'created_at' => now(),
-            'updated_at' => now(),
+            'created_at'            => now(),
+            'updated_at'            => now(),
         ]);
     }
 
